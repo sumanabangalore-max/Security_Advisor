@@ -3,7 +3,12 @@ import pandas as pd
 import json
 from typing import Optional
 
-INVENTORY_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "inventory")
+INVENTORY_DIR = os.getenv("INVENTORY_DIR")
+if not INVENTORY_DIR:
+    if os.path.exists("/app/inventory"):
+        INVENTORY_DIR = "/app/inventory"
+    else:
+        INVENTORY_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "inventory")
 
 def get_newest_inventory_file() -> tuple[Optional[str], Optional[str]]:
     if not os.path.exists(INVENTORY_DIR):

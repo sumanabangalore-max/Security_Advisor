@@ -1,7 +1,14 @@
 import os
 import json
 
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "scan_settings.json")
+INVENTORY_DIR = os.getenv("INVENTORY_DIR")
+if not INVENTORY_DIR:
+    if os.path.exists("/app/inventory"):
+        INVENTORY_DIR = "/app/inventory"
+    else:
+        INVENTORY_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "inventory")
+
+CONFIG_PATH = os.path.join(INVENTORY_DIR, "scan_settings.json")
 
 def read_scan_settings() -> dict:
     if os.path.exists(CONFIG_PATH):

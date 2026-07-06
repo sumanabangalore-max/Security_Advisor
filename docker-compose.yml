@@ -30,8 +30,6 @@ services:
         condition: service_healthy
     volumes:
       - ./inventory:/app/inventory
-      - ./cve_sources.json:/app/cve_sources.json
-      - ./scan_settings.json:/app/scan_settings.json
     command: python scripts/bootstrap_data.py
     environment:
       - DATABASE_URL=postgresql://cve_admin:admin_password_change_me@postgres:5432/cvetracker
@@ -51,8 +49,6 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./inventory:/app/inventory
-      - ./cve_sources.json:/app/cve_sources.json
-      - ./scan_settings.json:/app/scan_settings.json
     environment:
       - DATABASE_URL=postgresql://cve_admin:admin_password_change_me@postgres:5432/cvetracker
       - JWT_SECRET=cve_tracker_jwt_secret_token_12345
@@ -72,8 +68,6 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./inventory:/app/inventory
-      - ./cve_sources.json:/app/cve_sources.json
-      - ./scan_settings.json:/app/scan_settings.json
     environment:
       - DATABASE_URL=postgresql://cve_admin:admin_password_change_me@postgres:5432/cvetracker
     command: python app/worker.py
@@ -88,9 +82,6 @@ services:
       - "3000:3000"
     volumes:
       - ./inventory:/app/inventory
-      - ./cve_sources.json:/app/cve_sources.json
-      - ./scan_settings.json:/app/scan_settings.json
-      - ./users.json:/app/users.json
     environment:
       - NODE_ENV=production
 

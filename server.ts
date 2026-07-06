@@ -14,9 +14,9 @@ app.use(express.json({ limit: "50mb" }));
 // Load or create files in inventory and root
 const INVENTORY_DIR = path.join(process.cwd(), "inventory");
 const INVENTORY_PATH = path.join(INVENTORY_DIR, "inventory.json");
-const CVE_SOURCES_PATH = path.join(process.cwd(), "cve_sources.json");
-const SCAN_SETTINGS_PATH = path.join(process.cwd(), "scan_settings.json");
-const USERS_PATH = path.join(process.cwd(), "users.json");
+const CVE_SOURCES_PATH = path.join(INVENTORY_DIR, "cve_sources.json");
+const SCAN_SETTINGS_PATH = path.join(INVENTORY_DIR, "scan_settings.json");
+const USERS_PATH = path.join(INVENTORY_DIR, "users.json");
 
 // Default files setup
 if (!fs.existsSync(INVENTORY_DIR)) {
