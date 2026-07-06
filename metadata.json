@@ -1,0 +1,6 @@
+{
+  "name": "Security Advisory Tracker",
+  "description": "Full-stack security advisory dashboard to load software inventory, match CVEs from NIST NVD, manage vulnerability statuses, assign engineers, and export Excel reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

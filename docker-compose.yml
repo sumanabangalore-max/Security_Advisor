@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cve-tracker-db
+    environment:
+      POSTGRES_DB: cvetracker
+      POSTGRES_USER: cve_admin
+      POSTGRES_PASSWORD: admin_password_change_me
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cve_admin -d cvetracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  bootstrap:
+    image: cve-tracker-backend:latest
+    container_name: cve-tracker-bootstrap
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./inventory:/app/inventory
+      - ./cve_sources.json:/app/cve_sources.json
+      - ./scan_settings.json:/app/scan_settings.json
+    command: python scripts/bootstrap_data.py
+    environment:
+      - DATABASE_URL=postgresql://cve_admin:admin_password_change_me@postgres:5432/cvetracker
+
+  backend:
+    image: cve-tracker-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cve-tracker-api
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+    volumes:
+      - ./inventory:/app/inventory
+      - ./cve_sources.json:/app/cve_sources.json
+      - ./scan_settings.json:/app/scan_settings.json
+    environment:
+      - DATABASE_URL=postgresql://cve_admin:admin_password_change_me@postgres:5432/cvetracker
+      - JWT_SECRET=cve_tracker_jwt_secret_token_12345
+      - NVD_API_KEY=
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  worker:
+    image: cve-tracker-backend:latest
+    container_name: cve-tracker-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+    volumes:
+      - ./inventory:/app/inventory
+      - ./cve_sources.json:/app/cve_sources.json
+      - ./scan_settings.json:/app/scan_settings.json
+    environment:
+      - DATABASE_URL=postgresql://cve_admin:admin_password_change_me@postgres:5432/cvetracker
+    command: python app/worker.py
+
+  frontend:
+    image: cve-tracker-fullstack:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cve-tracker-ui
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./inventory:/app/inventory
+      - ./cve_sources.json:/app/cve_sources.json
+      - ./scan_settings.json:/app/scan_settings.json
+      - ./users.json:/app/users.json
+    environment:
+      - NODE_ENV=production
+
+volumes:
+  pgdata:
