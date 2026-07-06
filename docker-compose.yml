@@ -21,6 +21,9 @@ services:
 
   bootstrap:
     image: cve-tracker-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: cve-tracker-bootstrap
     depends_on:
       postgres:
@@ -58,6 +61,9 @@ services:
 
   worker:
     image: cve-tracker-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: cve-tracker-worker
     depends_on:
       postgres:

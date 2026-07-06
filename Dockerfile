@@ -23,12 +23,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 
-# Copy built files and runtime databases/assets
+# Copy built files
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/inventory ./inventory
-COPY --from=builder /app/cve_sources.json ./cve_sources.json
-COPY --from=builder /app/scan_settings.json ./scan_settings.json
-COPY --from=builder /app/users.json ./users.json
 
 # Expose port 3000 (standard port for the server.ts Express endpoint)
 EXPOSE 3000
