@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_all, create_engine
+from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://cve_admin:admin_password_change_me@postgres:5432/cvetracker")

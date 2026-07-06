@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import json
+from typing import Optional
 
 INVENTORY_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "inventory")
 
