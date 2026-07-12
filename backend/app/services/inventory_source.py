@@ -15,7 +15,22 @@ def get_newest_inventory_file() -> tuple[Optional[str], Optional[str]]:
         os.makedirs(INVENTORY_DIR, exist_ok=True)
         return None, None
 
-    files = [os.path.join(INVENTORY_DIR, f) for f in os.listdir(INVENTORY_DIR) if f.endswith(('.json', '.xlsx', '.csv'))]
+    system_files = {
+        "cve_sources.json",
+        "email_logs.json",
+        "eos_eol_overrides.json",
+        "scan_settings.json",
+        "smtp_settings.json",
+        "users.json"
+    }
+
+    files = []
+    for f in os.listdir(INVENTORY_DIR):
+        if f in system_files:
+            continue
+        if f.endswith(('.json', '.xlsx', '.csv')):
+            files.append(os.path.join(INVENTORY_DIR, f))
+
     if not files:
         return None, None
 
