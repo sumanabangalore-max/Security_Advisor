@@ -1,0 +1,7 @@
+{
+  "nvd_enabled": true,
+  "microsoft_enabled": true,
+  "ubuntu_enabled": true,
+  "cisco_enabled": true,
+  "aruba_enabled": true
+}

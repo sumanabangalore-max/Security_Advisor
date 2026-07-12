@@ -49,6 +49,21 @@ export interface CveSourcesConfig {
   microsoft_enabled: boolean;
   ubuntu_enabled: boolean;
   cisco_enabled: boolean;
+  aruba_enabled: boolean;
+}
+
+export interface EosEolRecord {
+  id: number;
+  software_name: string;
+  version: string;
+  environment: string;
+  status: "Supported" | "End of Support" | "End of Life";
+  eos_date: string;
+  eol_date: string;
+  last_check_date: string;
+  source_url: string;
+  notes: string;
+  source_checking?: string;
 }
 
 export interface ScanSettingsConfig {

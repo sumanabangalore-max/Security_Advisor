@@ -137,6 +137,27 @@ export default function CmdbScanPanel({ userRole, scanProgress, onScanTriggered,
           <Play className="h-3 w-3 fill-current" />
           {scanProgress.is_scanning ? "SCAN IN PROGRESS..." : "SCAN CMDB NOW"}
         </button>
+
+        {canEdit && (
+          <button
+            id="reset-db-btn"
+            onClick={async () => {
+              if (window.confirm("Are you sure you want to restore all patched inventory software to their default vulnerable versions? This will reset open vulnerabilities for testing.")) {
+                try {
+                  await api.post("/api/v1/scan/reset", {});
+                  onSettingsChanged();
+                } catch (err: any) {
+                  setError(err.message || "Failed to reset database");
+                }
+              }
+            }}
+            disabled={scanProgress.is_scanning}
+            className="flex w-full items-center justify-center gap-1.5 rounded border border-zinc-750 hover:border-red-500/30 hover:bg-red-500/10 py-2 text-[11px] font-semibold text-zinc-400 hover:text-red-400 transition-all cursor-pointer"
+            title="Reset systems back to vulnerable versions for testing"
+          >
+            Reset Database & Inventory (Unpatch)
+          </button>
+        )}
       </div>
 
       {/* Progress Section */}

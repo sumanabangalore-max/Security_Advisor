@@ -2,31 +2,111 @@
   {
     "software_name": "Apache HTTP Server",
     "version": "2.4.48",
-    "environment": "Production"
+    "environment": "Production",
+    "hostname": "web-srv-01.internal",
+    "ip_address": "10.140.0.12",
+    "owner": "Web-Ops Team",
+    "criticality": "High",
+    "cpe_uri": "cpe:2.3:a:apache:http_server:2.4.48:*:*:*:*:*:*:*"
   },
   {
     "software_name": "OpenSSL",
     "version": "1.1.1k",
-    "environment": "Production"
+    "environment": "Production",
+    "hostname": "auth-srv-04.internal",
+    "ip_address": "10.140.0.22",
+    "owner": "Security Team",
+    "criticality": "Critical",
+    "cpe_uri": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
   },
   {
     "software_name": "nginx",
     "version": "1.18.0",
-    "environment": "Staging"
+    "environment": "Staging",
+    "hostname": "lb-stage-01.internal",
+    "ip_address": "10.150.1.5",
+    "owner": "DevOps Team",
+    "criticality": "Medium",
+    "cpe_uri": "cpe:2.3:a:nginx:nginx:1.18.0:*:*:*:*:*:*:*"
   },
   {
     "software_name": "PostgreSQL",
     "version": "12.5",
-    "environment": "Production"
+    "environment": "Production",
+    "hostname": "db-prod-01.internal",
+    "ip_address": "10.140.0.50",
+    "owner": "Database Admins",
+    "criticality": "Critical",
+    "cpe_uri": "cpe:2.3:a:postgresql:postgresql:12.5:*:*:*:*:*:*:*"
   },
   {
     "software_name": "Node.js",
     "version": "14.17.0",
-    "environment": "Development"
+    "environment": "Development",
+    "hostname": "dev-box-alice.internal",
+    "ip_address": "192.168.1.104",
+    "owner": "Alice Developer",
+    "criticality": "Low",
+    "cpe_uri": "cpe:2.3:a:nodejs:node.js:14.17.0:*:*:*:*:*:*:*"
   },
   {
     "software_name": "Tomcat",
     "version": "9.0.45",
-    "environment": "Production"
+    "environment": "Staging",
+    "hostname": "tomcat-stage-02.internal",
+    "ip_address": "10.150.2.14",
+    "owner": "Java Dev Team",
+    "criticality": "High",
+    "cpe_uri": "cpe:2.3:a:apache:tomcat:9.0.45:*:*:*:*:*:*:*"
+  },
+  {
+    "software_name": "glibc",
+    "version": "2.31-0ubuntu9",
+    "environment": "Production",
+    "hostname": "app-srv-02.internal",
+    "ip_address": "10.140.0.18",
+    "owner": "SecOps Infra",
+    "criticality": "Critical",
+    "cpe_uri": "cpe:2.3:a:gnu:glibc:2.31:*:*:*:*:*:*:*"
+  },
+  {
+    "software_name": "Cisco IOS-XE",
+    "version": "16.12.1a",
+    "environment": "DMZ",
+    "hostname": "router-core-01.internal",
+    "ip_address": "10.200.10.1",
+    "owner": "NetOps Core",
+    "criticality": "High",
+    "cpe_uri": "cpe:2.3:o:cisco:ios_xe:16.12.1a:*:*:*:*:*:*:*"
+  },
+  {
+    "software_name": "Microsoft Outlook",
+    "version": "2016",
+    "environment": "User Endpoints",
+    "hostname": "corp-win-102.internal",
+    "ip_address": "172.16.4.102",
+    "owner": "Finance Dept",
+    "criticality": "Medium",
+    "cpe_uri": "cpe:2.3:a:microsoft:outlook:2016:*:*:*:*:*:*:*"
+  },
+  {
+    "software_name": "Microsoft Windows Server",
+    "version": "10.0.17763.1",
+    "environment": "Active Directory",
+    "hostname": "ad-dc-01.internal",
+    "ip_address": "10.100.0.4",
+    "owner": "IT Admins",
+    "criticality": "Critical",
+    "cpe_uri": "cpe:2.3:o:microsoft:windows_server:10.0.17763.1:*:*:*:*:*:*:*"
+  },
+  {
+    "software_name": "HPE Aruba Switch CX 6300",
+    "version": "10.04.0001",
+    "environment": "Core Switch",
+    "hostname": "aruba-core-sw01.internal",
+    "ip_address": "10.200.20.1",
+    "owner": "NetOps Team",
+    "criticality": "Critical",
+    "cpe_uri": "cpe:2.3:o:hpe:aruba_switch:10.04.0001:*:*:*:*:*:*:*"
   }
 ]

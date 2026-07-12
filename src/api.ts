@@ -1,7 +1,9 @@
 const getHeaders = () => {
   const token = localStorage.getItem("token");
+  const aiEngine = localStorage.getItem("active_ai_engine") || "gemini";
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    "X-AI-Engine": aiEngine,
   };
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;

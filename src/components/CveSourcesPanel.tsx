@@ -14,6 +14,7 @@ export default function CveSourcesPanel({ userRole, onSourcesChanged }: CveSourc
     microsoft_enabled: true,
     ubuntu_enabled: true,
     cisco_enabled: true,
+    aruba_enabled: true,
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -72,6 +73,12 @@ export default function CveSourcesPanel({ userRole, onSourcesChanged }: CveSourc
       key: "cisco_enabled" as keyof CveSourcesConfig,
       name: "Cisco Security Advisories",
       description: "Appliance patch streams for Cisco IOS XE software, routers, and enterprise switch firmware.",
+    },
+    {
+      id: "aruba",
+      key: "aruba_enabled" as keyof CveSourcesConfig,
+      name: "HPE Aruba Security Advisories",
+      description: "Appliance tracking feeds for HPE Aruba Switch CX 6300 firmware, controllers, and wireless access points.",
     },
   ];
 
