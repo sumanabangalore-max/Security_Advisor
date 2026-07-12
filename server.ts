@@ -6,6 +6,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { createServer as createViteServer } from "vite";
 import * as xlsx from "xlsx";
 import { GoogleGenAI } from "@google/genai";
+import nodemailer from "nodemailer";
 
 const app = express();
 const PORT = 3000;
@@ -18,6 +19,8 @@ const INVENTORY_PATH = path.join(INVENTORY_DIR, "inventory.json");
 const CVE_SOURCES_PATH = path.join(INVENTORY_DIR, "cve_sources.json");
 const SCAN_SETTINGS_PATH = path.join(INVENTORY_DIR, "scan_settings.json");
 const USERS_PATH = path.join(INVENTORY_DIR, "users.json");
+const SMTP_SETTINGS_PATH = path.join(INVENTORY_DIR, "smtp_settings.json");
+const EMAIL_LOGS_PATH = path.join(INVENTORY_DIR, "email_logs.json");
 
 // Default files setup
 if (!fs.existsSync(INVENTORY_DIR)) {
@@ -106,6 +109,25 @@ if (!fs.existsSync(USERS_PATH)) {
     { "username": "viewer", "role": "viewer" },
     { "username": "suman", "role": "admin" }
   ], null, 2));
+}
+
+if (!fs.existsSync(SMTP_SETTINGS_PATH)) {
+  fs.writeFileSync(SMTP_SETTINGS_PATH, JSON.stringify({
+    "smtp_host": "",
+    "smtp_port": 587,
+    "smtp_user": "",
+    "smtp_pass": "",
+    "sender_email": "secadvisor@example.com",
+    "default_recipient": "suman.ailearn@gmail.com",
+    "alert_thresholds": [15, 30, 60, 90],
+    "enable_follow_up": true,
+    "follow_up_interval_days": 7,
+    "sent_alerts": {}
+  }, null, 2));
+}
+
+if (!fs.existsSync(EMAIL_LOGS_PATH)) {
+  fs.writeFileSync(EMAIL_LOGS_PATH, JSON.stringify([], null, 2));
 }
 
 // Global active in-memory state for vulnerabilities matching the inventory
@@ -2165,6 +2187,7 @@ app.get("/api/v1/eos-eol", (req, res) => {
         software_name: item.software_name,
         version: item.version,
         environment: item.environment || "Production",
+        owner: item.owner || "Unassigned",
         status: userOverride.status || defaultInfo.status,
         eos_date: userOverride.eos_date || defaultInfo.eos_date,
         eol_date: userOverride.eol_date || defaultInfo.eol_date,
@@ -2213,6 +2236,342 @@ app.post("/api/v1/eos-eol/override", (req, res) => {
     res.status(500).json({ error: "Failed to update lifecycle details: " + err.message });
   }
 });
+
+
+// --- SMTP CONFIGURATION & AUTOMATED ALERTS ---
+
+// Helper function to log email activities
+function logEmailSent(software: string, version: string, owner: string, threshold: number, recipient: string, status: string, error?: string) {
+  let logs = [];
+  if (fs.existsSync(EMAIL_LOGS_PATH)) {
+    try {
+      logs = JSON.parse(fs.readFileSync(EMAIL_LOGS_PATH, "utf-8"));
+    } catch {
+      logs = [];
+    }
+  }
+  logs.unshift({
+    timestamp: new Date().toISOString(),
+    software,
+    version,
+    owner,
+    threshold,
+    recipient,
+    status,
+    error: error || null
+  });
+  // Keep last 100 logs
+  if (logs.length > 100) {
+    logs = logs.slice(0, 100);
+  }
+  fs.writeFileSync(EMAIL_LOGS_PATH, JSON.stringify(logs, null, 2));
+}
+
+// core function to check lifecycle dates and trigger emails
+async function runLifecycleAlertCheck(manual: boolean = false) {
+  const reports: any[] = [];
+  try {
+    const config = JSON.parse(fs.readFileSync(SMTP_SETTINGS_PATH, "utf-8"));
+    const inventory = JSON.parse(fs.readFileSync(INVENTORY_PATH, "utf-8"));
+    const overrides = JSON.parse(fs.readFileSync(EOS_EOL_OVERRIDES_PATH, "utf-8"));
+
+    const hasSmtp = !!(config.smtp_host && config.smtp_port);
+    let transporter: any = null;
+
+    if (hasSmtp) {
+      transporter = nodemailer.createTransport({
+        host: config.smtp_host,
+        port: Number(config.smtp_port),
+        secure: Number(config.smtp_port) === 465,
+        auth: config.smtp_user ? {
+          user: config.smtp_user,
+          pass: config.smtp_pass
+        } : undefined,
+        tls: { rejectUnauthorized: false }
+      });
+    }
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const today = new Date(todayStr);
+
+    let updatedSentAlerts = { ...(config.sent_alerts || {}) };
+    let alertSentCount = 0;
+
+    for (const item of inventory) {
+      const defaultInfo = getEosEolInfo(item.software_name, item.version);
+      const overrideKey = `${item.software_name.toLowerCase()}@${item.version.toLowerCase()}`;
+      const userOverride = overrides[overrideKey] || {};
+
+      const status = userOverride.status || defaultInfo.status;
+      const eos_date = userOverride.eos_date || defaultInfo.eos_date;
+      const eol_date = userOverride.eol_date || defaultInfo.eol_date;
+      const notes = userOverride.notes || defaultInfo.notes;
+      const source_url = userOverride.source_url || defaultInfo.source_url;
+      const owner = item.owner || "Unassigned";
+      
+      // Determine recipient email: if owner is an email, use it; otherwise default_recipient
+      const isEmail = (str: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
+      const recipient = isEmail(owner) ? owner : (config.default_recipient || "suman.ailearn@gmail.com");
+
+      const processDate = async (dateStr: string, milestoneType: "EOS" | "EOL") => {
+        if (!dateStr || dateStr === "N/A" || dateStr.includes("Active branch")) return;
+        const targetDate = new Date(dateStr);
+        if (isNaN(targetDate.getTime())) return;
+
+        const timeDiff = targetDate.getTime() - today.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        let triggerEmail = false;
+        let alertType = "";
+        let matchedThreshold = 0;
+
+        // 1. Threshold checks (e.g., 15, 30, 60, 90 days before)
+        const thresholds = config.alert_thresholds || [15, 30, 60, 90];
+        if (thresholds.includes(daysDiff)) {
+          const alertKey = `${overrideKey}_${milestoneType.toLowerCase()}_${daysDiff}`;
+          if (!updatedSentAlerts[alertKey] || manual) {
+            triggerEmail = true;
+            alertType = `${daysDiff}-Day Pre-Expiry`;
+            matchedThreshold = daysDiff;
+            updatedSentAlerts[alertKey] = todayStr;
+          }
+        } 
+        // 2. Expired Follow-up check
+        else if (daysDiff <= 0 && config.enable_follow_up) {
+          const followupKey = `${overrideKey}_${milestoneType.toLowerCase()}_followup`;
+          const lastSentStr = updatedSentAlerts[followupKey];
+          let sendFollowup = false;
+
+          if (!lastSentStr) {
+            sendFollowup = true;
+          } else {
+            const lastSentDate = new Date(lastSentStr);
+            const daysSinceLastAlert = Math.ceil((today.getTime() - lastSentDate.getTime()) / (1000 * 3600 * 24));
+            if (daysSinceLastAlert >= (config.follow_up_interval_days || 7)) {
+              sendFollowup = true;
+            }
+          }
+
+          if (sendFollowup) {
+            triggerEmail = true;
+            alertType = `Post-Expiry Follow-Up`;
+            matchedThreshold = daysDiff;
+            updatedSentAlerts[followupKey] = todayStr;
+          }
+        }
+
+        if (triggerEmail) {
+          const subject = `[SEC_ADVISOR Alert] ${item.software_name} (${item.version}) approaching ${milestoneType} (${alertType})`;
+          const bodyHtml = `
+            <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #e4e4e7; border-radius: 8px; background-color: #ffffff; color: #1f2937;">
+              <h2 style="color: #059669; margin-top: 0; border-bottom: 2px solid #e4e4e7; padding-bottom: 8px;">Lifecycle Alert Notice</h2>
+              <p>Hello,</p>
+              <p>This is an automated lifecycle advisory alert regarding a software asset registered in the CMDB inventory.</p>
+              
+              <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <tr style="background: #f4f4f5;"><td style="padding: 8px; font-weight: bold; border: 1px solid #e4e4e7; width: 160px;">Software Asset</td><td style="padding: 8px; border: 1px solid #e4e4e7;">${item.software_name}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold; border: 1px solid #e4e4e7;">Active Version</td><td style="padding: 8px; border: 1px solid #e4e4e7;">${item.version}</td></tr>
+                <tr style="background: #f4f4f5;"><td style="padding: 8px; font-weight: bold; border: 1px solid #e4e4e7;">Environment</td><td style="padding: 8px; border: 1px solid #e4e4e7;">${item.environment || "Production"}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold; border: 1px solid #e4e4e7;">Hostname / IP</td><td style="padding: 8px; border: 1px solid #e4e4e7;">${item.hostname || "N/A"} (${item.ip_address || "N/A"})</td></tr>
+                <tr style="background: #f4f4f5;"><td style="padding: 8px; font-weight: bold; border: 1px solid #e4e4e7;">Asset Owner</td><td style="padding: 8px; border: 1px solid #e4e4e7;">${owner}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold; border: 1px solid #e4e4e7;">Lifecycle Status</td><td style="padding: 8px; border: 1px solid #e4e4e7; color: #dc2626; font-weight: bold;">${status}</td></tr>
+                <tr style="background: #f4f4f5;"><td style="padding: 8px; font-weight: bold; border: 1px solid #e4e4e7;">End of Support (EOS)</td><td style="padding: 8px; border: 1px solid #e4e4e7;">${eos_date}</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold; border: 1px solid #e4e4e7;">End of Life (EOL)</td><td style="padding: 8px; border: 1px solid #e4e4e7;">${eol_date}</td></tr>
+                <tr style="background: #f4f4f5;"><td style="padding: 8px; font-weight: bold; border: 1px solid #e4e4e7;">Days Left (Milestone)</td><td style="padding: 8px; border: 1px solid #e4e4e7; font-weight: bold;">${daysDiff} days</td></tr>
+                <tr><td style="padding: 8px; font-weight: bold; border: 1px solid #e4e4e7;">Recommendations / Notes</td><td style="padding: 8px; border: 1px solid #e4e4e7; font-style: italic;">${notes}</td></tr>
+              </table>
+
+              <p><strong>Action Required:</strong> Please plan upgrade or replacement activities before the lifecycle deadline. You can view more reference sources at: <a href="${source_url}" target="_blank" style="color: #059669;">${source_url}</a></p>
+              
+              <hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;" />
+              <p style="font-size: 11px; color: #71717a;">This is an automated system notification from SEC_ADVISOR. Do not reply directly to this email.</p>
+            </div>
+          `;
+
+          const bodyText = `
+            Lifecycle Alert Notice
+            ----------------------
+            Software Asset: ${item.software_name}
+            Active Version: ${item.version}
+            Environment: ${item.environment || "Production"}
+            Hostname / IP: ${item.hostname || "N/A"} (${item.ip_address || "N/A"})
+            Asset Owner: ${owner}
+            Lifecycle Status: ${status}
+            End of Support: ${eos_date}
+            End of Life: ${eol_date}
+            Days Left: ${daysDiff} days
+            
+            Recommendations / Notes: ${notes}
+            Reference Link: ${source_url}
+            
+            Please plan upgrade or replacement activities accordingly.
+          `;
+
+          let logStatus = "Logged (No SMTP Host)";
+          let errorMsg = undefined;
+
+          if (hasSmtp && transporter) {
+            try {
+              await transporter.sendMail({
+                from: config.sender_email || "secadvisor@example.com",
+                to: recipient,
+                subject,
+                text: bodyText,
+                html: bodyHtml
+              });
+              logStatus = "Email Sent Successfully";
+              alertSentCount++;
+            } catch (err: any) {
+              logStatus = "SMTP Delivery Failed";
+              errorMsg = err.message;
+            }
+          } else {
+            logStatus = "Email Simulated (No SMTP configured)";
+            alertSentCount++;
+          }
+
+          logEmailSent(item.software_name, item.version, owner, matchedThreshold, recipient, logStatus, errorMsg);
+          reports.push({
+            software_name: item.software_name,
+            version: item.version,
+            owner,
+            recipient,
+            milestoneType,
+            daysDiff,
+            alertType,
+            status: logStatus,
+            error: errorMsg
+          });
+        }
+      };
+
+      await processDate(eos_date, "EOS");
+      await processDate(eol_date, "EOL");
+    }
+
+    config.sent_alerts = updatedSentAlerts;
+    fs.writeFileSync(SMTP_SETTINGS_PATH, JSON.stringify(config, null, 2));
+
+    return {
+      timestamp: new Date().toISOString(),
+      triggered_alerts_count: alertSentCount,
+      alerts_checked: inventory.length * 2,
+      detailed_reports: reports
+    };
+  } catch (err: any) {
+    console.error("Failed to execute lifecycle alert check: " + err.message);
+    return {
+      timestamp: new Date().toISOString(),
+      triggered_alerts_count: 0,
+      error: err.message,
+      detailed_reports: reports
+    };
+  }
+}
+
+// SMTP API Endpoints
+app.get("/api/v1/smtp/settings", (req, res) => {
+  try {
+    const config = JSON.parse(fs.readFileSync(SMTP_SETTINGS_PATH, "utf-8"));
+    const masked = { ...config };
+    if (masked.smtp_pass) {
+      masked.smtp_pass = "********";
+    }
+    res.json(masked);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to load SMTP settings: " + err.message });
+  }
+});
+
+app.patch("/api/v1/smtp/settings", (req, res) => {
+  try {
+    const existing = JSON.parse(fs.readFileSync(SMTP_SETTINGS_PATH, "utf-8"));
+    const update = req.body;
+    
+    if (update.smtp_pass === "********") {
+      delete update.smtp_pass;
+    }
+    
+    const finalConfig = { ...existing, ...update };
+    fs.writeFileSync(SMTP_SETTINGS_PATH, JSON.stringify(finalConfig, null, 2));
+    res.json({ message: "SMTP settings updated successfully", settings: finalConfig });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to save SMTP settings: " + err.message });
+  }
+});
+
+app.post("/api/v1/smtp/test", async (req, res) => {
+  try {
+    const config = JSON.parse(fs.readFileSync(SMTP_SETTINGS_PATH, "utf-8"));
+    const { test_email } = req.body;
+    
+    if (!config.smtp_host || !config.smtp_port) {
+      return res.status(400).json({ error: "SMTP Host and Port must be configured first." });
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: config.smtp_host,
+      port: Number(config.smtp_port),
+      secure: Number(config.smtp_port) === 465,
+      auth: config.smtp_user ? {
+        user: config.smtp_user,
+        pass: config.smtp_pass
+      } : undefined,
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
+
+    const recipient = test_email || config.default_recipient || "suman.ailearn@gmail.com";
+
+    const info = await transporter.sendMail({
+      from: config.sender_email || "secadvisor@example.com",
+      to: recipient,
+      subject: "[SEC_ADVISOR] SMTP Connection Test - SUCCESS",
+      text: "Hello! This email confirms that your SMTP server parameters configured in SEC_ADVISOR are functioning properly and can communicate with destination servers.",
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #10b981; border-radius: 8px;">
+          <h2 style="color: #10b981; margin-top: 0;">SMTP Test Successful</h2>
+          <p>Hello,</p>
+          <p>This email confirms that your SMTP server parameters configured in SEC_ADVISOR are functioning properly and can communicate with destination servers.</p>
+          <hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 20px 0;" />
+          <p style="font-size: 11px; color: #71717a;">This is a test notification. You do not need to reply to this email.</p>
+        </div>
+      `
+    });
+
+    res.json({ success: true, messageId: info.messageId });
+  } catch (err: any) {
+    res.status(500).json({ error: "SMTP Connection test failed: " + err.message });
+  }
+});
+
+app.post("/api/v1/smtp/trigger-check", async (req, res) => {
+  try {
+    const report = await runLifecycleAlertCheck(true);
+    res.json(report);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to run alert check: " + err.message });
+  }
+});
+
+app.get("/api/v1/smtp/logs", (req, res) => {
+  try {
+    let logs = [];
+    if (fs.existsSync(EMAIL_LOGS_PATH)) {
+      logs = JSON.parse(fs.readFileSync(EMAIL_LOGS_PATH, "utf-8"));
+    }
+    res.json(logs);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to load email logs: " + err.message });
+  }
+});
+
+// Daily background scheduler for automated alerts
+setInterval(() => {
+  console.log("Triggering scheduled background lifecycle alert check...");
+  runLifecycleAlertCheck(false).catch(err => console.error("Background alert check failed:", err));
+}, 24 * 60 * 60 * 1000);
 
 
 // Vite Middleware for integrated React SPA development
@@ -2318,6 +2677,13 @@ async function startViteMiddleware() {
     }
     scanHasRunOnce = true;
     console.log(`Initial scan complete. Pre-seeded ${matchedVulnerabilities.length} vulnerabilities.`);
+    
+    // Trigger startup check for approaching EOS/EOL milestones
+    runLifecycleAlertCheck(false).then(report => {
+      console.log(`Startup lifecycle alert check complete. Triggered ${report.triggered_alerts_count} alerts.`);
+    }).catch(err => {
+      console.error("Startup lifecycle alert check failed:", err);
+    });
   } catch (err) {
     console.error("Failed to pre-seed scan vulnerabilities on startup:", err);
   }

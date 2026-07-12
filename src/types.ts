@@ -64,6 +64,7 @@ export interface EosEolRecord {
   source_url: string;
   notes: string;
   source_checking?: string;
+  owner?: string;
 }
 
 export interface ScanSettingsConfig {

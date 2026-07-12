@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LogOut, ShieldAlert, Layers, UserCheck, Clock } from "lucide-react";
+import { LogOut, ShieldAlert, Layers, UserCheck, Clock, Settings } from "lucide-react";
 import { api } from "../api";
 import { DashboardStats, ScanProgressState } from "../types";
 import CmdbScanPanel from "./CmdbScanPanel";
@@ -9,6 +9,7 @@ import InventoryGrid from "./InventoryGrid";
 import EosEolTrackerGrid from "./EosEolTrackerGrid";
 import UserManagementPanel from "./UserManagementPanel";
 import ZeroDayAlertPanel from "./ZeroDayAlertPanel";
+import ConfigurationPanel from "./ConfigurationPanel";
 
 interface DashboardProps {
   username: string;
@@ -25,7 +26,7 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
     zero_day_count: 0
   });
 
-  const [activeTab, setActiveTab] = useState<"vulnerabilities" | "inventory" | "eos-eol" | "users">("vulnerabilities");
+  const [activeTab, setActiveTab] = useState<"vulnerabilities" | "inventory" | "eos-eol" | "config">("vulnerabilities");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeAiEngine, setActiveAiEngine] = useState(() => {
     return localStorage.getItem("active_ai_engine") || "gemini";
@@ -154,12 +155,12 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
               EOS/EOL Tracker
             </button>
             <button
-              onClick={() => setActiveTab("users")}
-              id="tab-users"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "users" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+              onClick={() => setActiveTab("config")}
+              id="tab-config"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "config" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
             >
-              <UserCheck className="h-4 w-4" />
-              Users & Access
+              <Settings className="h-4 w-4" />
+              Configuration
             </button>
           </nav>
         </div>
@@ -275,59 +276,61 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
               EOS/EOL
             </button>
             <button
-              onClick={() => setActiveTab("users")}
-              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "users" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
-              id="tab-users-mobile"
+              onClick={() => setActiveTab("config")}
+              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "config" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
+              id="tab-config-mobile"
             >
-              Users
+              Configuration
             </button>
           </div>
 
-          <div className="grid grid-cols-12 gap-6">
-            {/* Main Interactive Grid */}
-            <div className="col-span-12 lg:col-span-8 space-y-6">
-              <ZeroDayAlertPanel
-                userRole={userRole}
-                refreshTrigger={refreshTrigger}
-                onPatched={() => setRefreshTrigger(prev => prev + 1)}
-              />
+          {activeTab === "config" ? (
+            <ConfigurationPanel userRole={userRole} />
+          ) : (
+            <div className="grid grid-cols-12 gap-6">
+              {/* Main Interactive Grid */}
+              <div className="col-span-12 lg:col-span-8 space-y-6">
+                <ZeroDayAlertPanel
+                  userRole={userRole}
+                  refreshTrigger={refreshTrigger}
+                  onPatched={() => setRefreshTrigger(prev => prev + 1)}
+                />
 
-              {activeTab === "vulnerabilities" ? (
-                <VulnerabilityGrid
-                  userRole={userRole}
-                  refreshTrigger={refreshTrigger}
-                  onStatusChanged={() => setRefreshTrigger(prev => prev + 1)}
-                />
-              ) : activeTab === "inventory" ? (
-                <InventoryGrid
-                  userRole={userRole}
-                  refreshTrigger={refreshTrigger}
-                />
-              ) : activeTab === "eos-eol" ? (
-                <EosEolTrackerGrid
-                  userRole={userRole}
-                  refreshTrigger={refreshTrigger}
-                  onEosUpdated={() => setRefreshTrigger(prev => prev + 1)}
-                />
-              ) : (
-                <UserManagementPanel userRole={userRole} />
-              )}
-            </div>
+                {activeTab === "vulnerabilities" ? (
+                  <VulnerabilityGrid
+                    userRole={userRole}
+                    refreshTrigger={refreshTrigger}
+                    onStatusChanged={() => setRefreshTrigger(prev => prev + 1)}
+                  />
+                ) : activeTab === "inventory" ? (
+                  <InventoryGrid
+                    userRole={userRole}
+                    refreshTrigger={refreshTrigger}
+                  />
+                ) : (
+                  <EosEolTrackerGrid
+                    userRole={userRole}
+                    refreshTrigger={refreshTrigger}
+                    onEosUpdated={() => setRefreshTrigger(prev => prev + 1)}
+                  />
+                )}
+              </div>
 
-            {/* Config Panels and Scan Controllers */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
-              <CmdbScanPanel
-                userRole={userRole}
-                scanProgress={scanProgress}
-                onScanTriggered={triggerScan}
-                onSettingsChanged={() => setRefreshTrigger(prev => prev + 1)}
-              />
-              <CveSourcesPanel
-                userRole={userRole}
-                onSourcesChanged={() => setRefreshTrigger(prev => prev + 1)}
-              />
+              {/* Config Panels and Scan Controllers */}
+              <div className="col-span-12 lg:col-span-4 space-y-6">
+                <CmdbScanPanel
+                  userRole={userRole}
+                  scanProgress={scanProgress}
+                  onScanTriggered={triggerScan}
+                  onSettingsChanged={() => setRefreshTrigger(prev => prev + 1)}
+                />
+                <CveSourcesPanel
+                  userRole={userRole}
+                  onSourcesChanged={() => setRefreshTrigger(prev => prev + 1)}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

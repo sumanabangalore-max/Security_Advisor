@@ -116,6 +116,7 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
       "Software Name",
       "Active Version",
       "Environment",
+      "Owner",
       "Lifecycle Status",
       "End of Support (EOS)",
       "End of Life (EOL)",
@@ -129,6 +130,7 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
       `"${rec.software_name.replace(/"/g, '""')}"`,
       `"${rec.version.replace(/"/g, '""')}"`,
       `"${rec.environment.replace(/"/g, '""')}"`,
+      `"${(rec.owner || "Unassigned").replace(/"/g, '""')}"`,
       `"${rec.status.replace(/"/g, '""')}"`,
       `"${rec.eos_date.replace(/"/g, '""')}"`,
       `"${rec.eol_date.replace(/"/g, '""')}"`,
@@ -406,6 +408,7 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
                   {renderSortHeader("software_name", "Software Asset")}
                   {renderSortHeader("version", "Active Version")}
                   {renderSortHeader("environment", "Environment")}
+                  {renderSortHeader("owner", "Owner")}
                   {renderSortHeader("status", "Lifecycle Status")}
                   {renderSortHeader("eos_date", "End of Support (EOS)")}
                   {renderSortHeader("eol_date", "End of Life (EOL)")}
@@ -428,6 +431,11 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
                       <td className="py-4 px-4">
                         <span className="inline-flex items-center rounded-sm bg-zinc-800 px-1.5 py-0.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
                           {rec.environment}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="text-zinc-400 font-semibold bg-zinc-900/40 border border-zinc-850 px-2 py-0.5 rounded text-[10px]">
+                          {rec.owner || "Unassigned"}
                         </span>
                       </td>
                       <td className="py-4 px-4">
