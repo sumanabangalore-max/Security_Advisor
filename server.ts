@@ -709,8 +709,9 @@ app.post("/api/v1/auth/login", (req, res) => {
       return res.status(401).json({ detail: "User does not exist in Sandbox user directory." });
     }
     
-    // Simple verification (password is the same as username in sandbox)
-    if (password === username) {
+    // Simple verification (password is the same as username by default, or matchedUser.password if customized)
+    const expectedPassword = matchedUser.password !== undefined ? matchedUser.password : username;
+    if (password === expectedPassword) {
       return res.json({
         access_token: "mock_jwt_token_" + matchedUser.role + "_" + Date.now(),
         token_type: "bearer",
@@ -722,7 +723,7 @@ app.post("/api/v1/auth/login", (req, res) => {
     return res.status(500).json({ detail: "Database access error" });
   }
 
-  return res.status(401).json({ detail: "Incorrect password. (Hint: password is the same as username)" });
+  return res.status(401).json({ detail: "Incorrect password. (Hint: password defaults to username)" });
 });
 
 // 3. User Management endpoints
@@ -785,6 +786,30 @@ app.patch("/api/v1/users/:username/role", (req, res) => {
     res.json({ status: "success", users });
   } catch (err) {
     res.status(500).json({ detail: "Failed to update role" });
+  }
+});
+
+app.post("/api/v1/users/:username/reset-password", (req, res) => {
+  const { username } = req.params;
+  const { password } = req.body;
+
+  try {
+    const users = JSON.parse(fs.readFileSync(USERS_PATH, "utf-8"));
+    const matched = users.find((u: any) => u.username.toLowerCase() === username.toLowerCase());
+    if (!matched) {
+      return res.status(404).json({ detail: "User not found" });
+    }
+
+    if (password === undefined || password === null || password.trim() === "") {
+      delete matched.password;
+    } else {
+      matched.password = password.trim();
+    }
+
+    fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
+    res.json({ status: "success", message: `Password updated successfully for ${username}.` });
+  } catch (err) {
+    res.status(500).json({ detail: "Failed to reset password" });
   }
 });
 

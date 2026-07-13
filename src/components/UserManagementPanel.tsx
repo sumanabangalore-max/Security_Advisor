@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { UserCheck, Plus, Trash2, Shield, User, CircleDot } from "lucide-react";
+import { UserCheck, Plus, Trash2, Shield, User, CircleDot, Key, X, Check } from "lucide-react";
 import { api } from "../api";
 
 interface UserAccount {
@@ -19,6 +19,10 @@ export default function UserManagementPanel({ userRole }: UserManagementPanelPro
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [resetPasswordUser, setResetPasswordUser] = useState<string | null>(null);
+  const [newPasswordValue, setNewPasswordValue] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+
   const canEdit = userRole === "admin";
 
   useEffect(() => {
@@ -31,6 +35,25 @@ export default function UserManagementPanel({ userRole }: UserManagementPanelPro
       setUsers(data);
     } catch {
       setError("Failed to fetch user list.");
+    }
+  };
+
+  const handleResetPassword = async (username: string) => {
+    if (!canEdit || resetLoading) return;
+    setResetLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      await api.post(`/api/v1/users/${username}/reset-password`, {
+        password: newPasswordValue
+      });
+      setSuccess(`Password for user "${username}" has been successfully updated!`);
+      setResetPasswordUser(null);
+      setNewPasswordValue("");
+    } catch (err: any) {
+      setError(err.message || "Failed to reset password.");
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -152,37 +175,84 @@ export default function UserManagementPanel({ userRole }: UserManagementPanelPro
                         {u.username}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      {canEdit ? (
-                        <select
-                          value={u.role}
-                          onChange={(e) => handleUpdateRole(u.username, e.target.value as any)}
-                          className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] font-bold text-zinc-300 focus:outline-none cursor-pointer uppercase tracking-wider"
-                        >
-                          <option value="admin">Administrator</option>
-                          <option value="analyst">Analyst</option>
-                          <option value="viewer">Viewer</option>
-                        </select>
-                      ) : (
-                        <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase border ${getRoleBadgeColor(u.role)}`}>
-                          {u.role}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {canEdit ? (
-                        <button
-                          onClick={() => handleDeleteUser(u.username)}
-                          disabled={users.length <= 1}
-                          className="text-zinc-500 hover:text-red-400 p-1 rounded hover:bg-zinc-900 transition-all cursor-pointer disabled:opacity-30"
-                          title="Delete User"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      ) : (
-                        <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Read Only</span>
-                      )}
-                    </td>
+                    {resetPasswordUser === u.username ? (
+                      <td className="px-4 py-3 text-right" colSpan={2}>
+                        <div className="flex items-center justify-end gap-2 animate-in slide-in-from-right-1 duration-150">
+                          <span className="text-[10px] text-zinc-500 font-medium">New Password:</span>
+                          <input
+                            type="text"
+                            value={newPasswordValue}
+                            onChange={(e) => setNewPasswordValue(e.target.value)}
+                            placeholder="Leave empty to use username"
+                            className="bg-zinc-900 border border-zinc-700 rounded px-2.5 py-1 text-[11px] text-white focus:outline-none focus:border-emerald-500 w-44"
+                          />
+                          <button
+                            onClick={() => handleResetPassword(u.username)}
+                            disabled={resetLoading}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white rounded p-1 cursor-pointer flex items-center justify-center transition-colors"
+                            title="Confirm Password Reset"
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setResetPasswordUser(null);
+                              setNewPasswordValue("");
+                            }}
+                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded p-1 cursor-pointer flex items-center justify-center transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    ) : (
+                      <>
+                        <td className="px-4 py-3">
+                          {canEdit ? (
+                            <select
+                              value={u.role}
+                              onChange={(e) => handleUpdateRole(u.username, e.target.value as any)}
+                              className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] font-bold text-zinc-300 focus:outline-none cursor-pointer uppercase tracking-wider"
+                            >
+                              <option value="admin">Administrator</option>
+                              <option value="analyst">Analyst</option>
+                              <option value="viewer">Viewer</option>
+                            </select>
+                          ) : (
+                            <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase border ${getRoleBadgeColor(u.role)}`}>
+                              {u.role}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {canEdit ? (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setResetPasswordUser(u.username);
+                                  setNewPasswordValue("");
+                                }}
+                                className="text-zinc-500 hover:text-emerald-400 p-1 rounded hover:bg-zinc-900 transition-all cursor-pointer"
+                                title="Reset Password"
+                              >
+                                <Key className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(u.username)}
+                                disabled={users.length <= 1}
+                                className="text-zinc-500 hover:text-red-400 p-1 rounded hover:bg-zinc-900 transition-all cursor-pointer disabled:opacity-30"
+                                title="Delete User"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Read Only</span>
+                          )}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

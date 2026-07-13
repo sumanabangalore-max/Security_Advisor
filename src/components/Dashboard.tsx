@@ -146,14 +146,16 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
               <Layers className="h-4 w-4" />
               Master Inventory
             </button>
-            <button
-              onClick={() => setActiveTab("eos-eol")}
-              id="tab-eos-eol"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "eos-eol" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              <Clock className="h-4 w-4" />
-              EOS/EOL Tracker
-            </button>
+            {userRole === "admin" && (
+              <button
+                onClick={() => setActiveTab("eos-eol")}
+                id="tab-eos-eol"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "eos-eol" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+              >
+                <Clock className="h-4 w-4" />
+                EOS/EOL Tracker
+              </button>
+            )}
             <button
               onClick={() => setActiveTab("config")}
               id="tab-config"
@@ -268,13 +270,15 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
             >
               Inventory
             </button>
-            <button
-              onClick={() => setActiveTab("eos-eol")}
-              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "eos-eol" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
-              id="tab-eos-eol-mobile"
-            >
-              EOS/EOL
-            </button>
+            {userRole === "admin" && (
+              <button
+                onClick={() => setActiveTab("eos-eol")}
+                className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "eos-eol" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
+                id="tab-eos-eol-mobile"
+              >
+                EOS/EOL
+              </button>
+            )}
             <button
               onClick={() => setActiveTab("config")}
               className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "config" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
@@ -307,12 +311,16 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
                     userRole={userRole}
                     refreshTrigger={refreshTrigger}
                   />
-                ) : (
+                ) : activeTab === "eos-eol" && userRole === "admin" ? (
                   <EosEolTrackerGrid
                     userRole={userRole}
                     refreshTrigger={refreshTrigger}
                     onEosUpdated={() => setRefreshTrigger(prev => prev + 1)}
                   />
+                ) : (
+                  <div className="bg-[#121214] p-6 border border-zinc-800 rounded-lg text-center">
+                    <p className="text-xs text-zinc-500">Select an active panel above.</p>
+                  </div>
                 )}
               </div>
 
