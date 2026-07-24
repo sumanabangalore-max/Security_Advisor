@@ -26,7 +26,43 @@ The application consists of five Docker services defined in `docker-compose.yml`
 
 ---
 
-## 💻 Running on Docker Desktop (Localhost)
+## ⚙️ Languages, LLM & Model Context Protocol (MCP) Configuration
+
+This system utilizes a modern full-stack architecture designed for extreme performance, security, and smart capabilities. Below is the technical breakdown of the languages, Large Language Models (LLMs), and Model Context Protocol (MCP) details.
+
+### 1. Languages & Frameworks Used
+* **Frontend**: **TypeScript (React 18)** built with **Vite** and styled using **Tailwind CSS**. 
+  * Rich micro-animations are driven by `motion/react` (Framer Motion).
+  * Data visualization and graphs utilize `recharts`.
+  * Standardized typography is set with the clean `Inter` and `JetBrains Mono` fonts.
+* **Backend (Active Environment)**: **TypeScript & Node.js (Express)**.
+  * In the developer workspace and production deployment, a high-fidelity unified Express server (`server.ts`) handles REST APIs and live WebSockets.
+  * The TypeScript backend is bundled using `esbuild` into a single, high-performance CommonJS file (`dist/server.cjs`) to minimize startup times and filesystem I/O.
+* **Supplementary/Alternative Backend**: **Python 3**.
+  * A full FastAPI suite is maintained in `/backend` with `SQLAlchemy`, `pandas`, and `openpyxl` for optional database setups and supplementary spreadsheet ingestion scripts.
+
+### 2. Large Language Model (LLM) Integration
+The advisory panel features deep, contextual intelligence powered by generative AI:
+* **LLM Engine**: **Google Gemini** (interacting via the official `@google/genai` SDK on the server-side).
+* **Primary Features**: Generates smart contextual advisories, risk scoring, tailored container/firewall remediation playbooks, and OS workaround guides dynamically based on exact package configurations.
+* **Configuration**:
+  * Set the `GEMINI_API_KEY` environment variable in your server environment or platform secrets.
+  * *Graceful Fallback*: If the API key is not supplied, the system seamlessly triggers standard local rules-based security advisories to ensure continuous operation.
+
+### 3. Model Context Protocol (MCP)
+* **Status**: This application currently operates over high-fidelity custom REST APIs and WebSockets. There is **no dedicated MCP server** pre-bundled in the codebase.
+* **How to Integrate MCP**:
+  If you wish to control, inspect, or fetch inventory state directly from an AI Assistant (like Claude Desktop or Gemini Code Assist), you can easily wrap this application's API endpoints using the official Model Context Protocol.
+  
+  To set up an MCP server bridge:
+  1. Install the MCP SDK: `npm install @modelcontextprotocol/sdk`
+  2. Map these existing endpoints to MCP Tools:
+     * `get_inventory_status` -> Queries `/api/v1/inventory`
+     * `list_vulnerabilities` -> Queries `/api/v1/vulnerabilities`
+     * `get_patch_advisory` -> Queries `/api/v1/vulnerabilities/:id/ai-advisory`
+  3. register the bridge inside your `claude_desktop_config.json` or equivalent agent tool integration!
+
+---
 
 Follow these steps to build, run, and test the system locally using Docker Desktop:
 

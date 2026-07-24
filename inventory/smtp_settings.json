@@ -1,0 +1,34 @@
+{
+  "smtp_host": "",
+  "smtp_port": 587,
+  "smtp_user": "",
+  "smtp_pass": "",
+  "sender_email": "secadvisor@example.com",
+  "default_recipient": "suman.ailearn@gmail.com",
+  "alert_thresholds": [
+    15,
+    30,
+    60,
+    90
+  ],
+  "enable_follow_up": true,
+  "follow_up_interval_days": 7,
+  "sent_alerts": {
+    "openssl@1.1.1k_eos_followup": "2026-07-16",
+    "openssl@1.1.1k_eol_followup": "2026-07-16",
+    "nginx@1.18.0_eos_followup": "2026-07-16",
+    "nginx@1.18.0_eol_followup": "2026-07-16",
+    "postgresql@12.5_eos_followup": "2026-07-16",
+    "postgresql@12.5_eol_followup": "2026-07-16",
+    "node.js@14.17.0_eos_followup": "2026-07-16",
+    "node.js@14.17.0_eol_followup": "2026-07-16",
+    "glibc@2.31-0ubuntu9_eos_followup": "2026-07-16",
+    "cisco ios-xe@16.12.1a_eos_followup": "2026-07-16",
+    "cisco ios-xe@16.12.1a_eol_followup": "2026-07-16",
+    "microsoft outlook@2016_eos_followup": "2026-07-16",
+    "microsoft outlook@2016_eol_followup": "2026-07-16",
+    "microsoft windows server@10.0.17763.1_eos_followup": "2026-07-16",
+    "hpe aruba switch cx 6300@10.04.0001_eos_followup": "2026-07-16",
+    "hpe aruba switch cx 6300@10.04.0001_eol_followup": "2026-07-16"
+  }
+}

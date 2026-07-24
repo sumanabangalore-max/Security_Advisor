@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LogOut, ShieldAlert, Layers, UserCheck, Clock, Settings } from "lucide-react";
+import { LogOut, ShieldAlert, Layers, Clock, Settings, MessageSquare, Coins } from "lucide-react";
 import { api } from "../api";
 import { DashboardStats, ScanProgressState } from "../types";
 import CmdbScanPanel from "./CmdbScanPanel";
@@ -7,9 +7,11 @@ import CveSourcesPanel from "./CveSourcesPanel";
 import VulnerabilityGrid from "./VulnerabilityGrid";
 import InventoryGrid from "./InventoryGrid";
 import EosEolTrackerGrid from "./EosEolTrackerGrid";
-import UserManagementPanel from "./UserManagementPanel";
-import ZeroDayAlertPanel from "./ZeroDayAlertPanel";
 import ConfigurationPanel from "./ConfigurationPanel";
+import ZeroDayAlertPanel from "./ZeroDayAlertPanel";
+import NotificationBell, { NotificationItem } from "./NotificationBell";
+import AiChatbotPanel from "./AiChatbotPanel";
+import TokenAnalyticsPanel from "./TokenAnalyticsPanel";
 
 interface DashboardProps {
   username: string;
@@ -26,11 +28,57 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
     zero_day_count: 0
   });
 
-  const [activeTab, setActiveTab] = useState<"vulnerabilities" | "inventory" | "eos-eol" | "config">("vulnerabilities");
+  const [activeTab, setActiveTab] = useState<"vulnerabilities" | "inventory" | "chatbot" | "eos-eol" | "config" | "token-analytics">("vulnerabilities");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeAiEngine, setActiveAiEngine] = useState(() => {
     return localStorage.getItem("active_ai_engine") || "gemini";
   });
+
+  // Notification Bell State
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    const saved = localStorage.getItem("sec_advisor_notifications");
+    if (saved) {
+      try { return JSON.parse(saved); } catch { /* ignore */ }
+    }
+    return [
+      {
+        id: "init-1",
+        title: "SecAdvisor WS Live Connected",
+        message: "Listening to real-time CMDB inventory changes & vulnerability threat updates.",
+        timestamp: new Date().toISOString(),
+        read: false,
+        event: "status_changed"
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("sec_advisor_notifications", JSON.stringify(notifications));
+  }, [notifications]);
+
+  const addNotification = (title: string, message: string, eventType?: string) => {
+    const newItem: NotificationItem = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      title,
+      message,
+      timestamp: new Date().toISOString(),
+      read: false,
+      event: eventType
+    };
+    setNotifications(prev => [newItem, ...prev.slice(0, 49)]);
+  };
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleClearAllNotifications = () => {
+    setNotifications([]);
+  };
 
   const toggleAiEngine = (engine: "gemini" | "ollama") => {
     localStorage.setItem("active_ai_engine", engine);
@@ -62,6 +110,10 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
         try {
           const msg = JSON.parse(event.data);
           
+          if (msg.title && msg.message) {
+            addNotification(msg.title, msg.message, msg.event);
+          }
+
           if (msg.event === "scan_progress") {
             setScanProgress({
               is_scanning: msg.is_scanning,
@@ -71,12 +123,15 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
             // Auto-refresh stats when scan completes
             if (!msg.is_scanning && msg.percentage === 100) {
               setRefreshTrigger(prev => prev + 1);
+              addNotification("Scan Completed", "CMDB vulnerability scan completed.", "scan_progress");
             }
           } else if (msg.event === "vulnerabilities_updated") {
             setRefreshTrigger(prev => prev + 1);
           } else if (msg.event === "status_changed") {
             setRefreshTrigger(prev => prev + 1);
           } else if (msg.event === "inventory_updated") {
+            setRefreshTrigger(prev => prev + 1);
+          } else if (msg.event === "zeroday_patched") {
             setRefreshTrigger(prev => prev + 1);
           }
         } catch (err) {
@@ -146,6 +201,19 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
               <Layers className="h-4 w-4" />
               Master Inventory
             </button>
+            <button
+              onClick={() => setActiveTab("chatbot")}
+              id="tab-chatbot"
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "chatbot" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+            >
+              <span className="flex items-center gap-3">
+                <MessageSquare className="h-4 w-4 text-emerald-400" />
+                AI Security Chat
+              </span>
+              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] px-1.5 py-0.5 rounded font-mono font-bold">
+                AI
+              </span>
+            </button>
             {userRole === "admin" && (
               <button
                 onClick={() => setActiveTab("eos-eol")}
@@ -163,6 +231,14 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
             >
               <Settings className="h-4 w-4" />
               Configuration
+            </button>
+            <button
+              onClick={() => setActiveTab("token-analytics")}
+              id="tab-token-analytics"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "token-analytics" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+            >
+              <Coins className="h-4 w-4 text-purple-400" />
+              Token & Cost Analytics
             </button>
           </nav>
         </div>
@@ -240,6 +316,14 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               WS Live Connected
             </span>
+
+            {/* Live Notification Bell Dropdown */}
+            <NotificationBell
+              notifications={notifications}
+              onMarkAsRead={handleMarkAsRead}
+              onMarkAllAsRead={handleMarkAllAsRead}
+              onClearAll={handleClearAllNotifications}
+            />
             
             {/* Mobile/small viewport sign out button */}
             <button
@@ -270,6 +354,13 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
             >
               Inventory
             </button>
+            <button
+              onClick={() => setActiveTab("chatbot")}
+              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "chatbot" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
+              id="tab-chatbot-mobile"
+            >
+              AI Chat
+            </button>
             {userRole === "admin" && (
               <button
                 onClick={() => setActiveTab("eos-eol")}
@@ -286,10 +377,21 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
             >
               Configuration
             </button>
+            <button
+              onClick={() => setActiveTab("token-analytics")}
+              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "token-analytics" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
+              id="tab-token-analytics-mobile"
+            >
+              Analytics
+            </button>
           </div>
 
           {activeTab === "config" ? (
             <ConfigurationPanel userRole={userRole} />
+          ) : activeTab === "chatbot" ? (
+            <AiChatbotPanel userRole={userRole} />
+          ) : activeTab === "token-analytics" ? (
+            <TokenAnalyticsPanel />
           ) : (
             <div className="grid grid-cols-12 gap-6">
               {/* Main Interactive Grid */}
