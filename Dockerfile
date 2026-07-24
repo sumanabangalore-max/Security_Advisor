@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Copy package files and install all dependencies (including devDependencies)
 COPY package*.json ./
-RUN npm ci
+RUN npm ci || npm install
 
 # Copy the entire workspace to build the production bundle
 COPY . .
@@ -21,7 +21,7 @@ WORKDIR /app
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev || npm install --omit=dev
 
 # Copy built files
 COPY --from=builder /app/dist ./dist
