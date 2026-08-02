@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Shield, Settings, Play, CheckCircle2, AlertTriangle, Cpu } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Shield, Settings, Play, CheckCircle2, AlertTriangle, Cpu, Lock, KeyRound, X, RefreshCw } from "lucide-react";
 import { api } from "../api";
 import { ScanSettingsConfig, ScanProgressState } from "../types";
 
@@ -16,6 +16,13 @@ export default function CmdbScanPanel({ userRole, scanProgress, onScanTriggered,
   const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Reset Modal states
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetUsername, setResetUsername] = useState("admin");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState("");
+
   const canEdit = userRole === "admin" || userRole === "analyst";
 
   useEffect(() => {
@@ -28,6 +35,43 @@ export default function CmdbScanPanel({ userRole, scanProgress, onScanTriggered,
       setSettings(data);
     } catch (err: any) {
       setError("Failed to load scan settings");
+    }
+  };
+
+  const handleOpenResetModal = () => {
+    if (userRole !== "admin") {
+      setError("Access Denied: Reset Database & Inventory function requires Admin role.");
+      return;
+    }
+    setError("");
+    setResetError("");
+    setResetPassword("");
+    setResetUsername("admin");
+    setShowResetModal(true);
+  };
+
+  const handleExecuteReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPassword) {
+      setResetError("Please enter the admin password.");
+      return;
+    }
+
+    setResetLoading(true);
+    setResetError("");
+
+    try {
+      await api.post("/api/v1/scan/reset", {
+        username: resetUsername.trim(),
+        password: resetPassword
+      });
+      setShowResetModal(false);
+      setResetPassword("");
+      onSettingsChanged();
+    } catch (err: any) {
+      setResetError(err.message || "Failed to reset database. Invalid credentials.");
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -141,24 +185,109 @@ export default function CmdbScanPanel({ userRole, scanProgress, onScanTriggered,
         {canEdit && (
           <button
             id="reset-db-btn"
-            onClick={async () => {
-              if (window.confirm("Are you sure you want to restore all patched inventory software to their default vulnerable versions? This will reset open vulnerabilities for testing.")) {
-                try {
-                  await api.post("/api/v1/scan/reset", {});
-                  onSettingsChanged();
-                } catch (err: any) {
-                  setError(err.message || "Failed to reset database");
-                }
-              }
-            }}
+            onClick={handleOpenResetModal}
             disabled={scanProgress.is_scanning}
             className="flex w-full items-center justify-center gap-1.5 rounded border border-zinc-750 hover:border-red-500/30 hover:bg-red-500/10 py-2 text-[11px] font-semibold text-zinc-400 hover:text-red-400 transition-all cursor-pointer"
-            title="Reset systems back to vulnerable versions for testing"
+            title="Reset systems back to vulnerable versions for testing (Requires Admin Password)"
           >
+            <Lock className="h-3 w-3 text-amber-500/80" />
             Reset Database & Inventory (Unpatch)
           </button>
         )}
       </div>
+
+      {/* Admin Password Modal Overlay */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md rounded-lg border border-red-500/30 bg-zinc-950 p-6 shadow-2xl space-y-4 relative">
+            <button
+              onClick={() => setShowResetModal(false)}
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-zinc-800 pb-3">
+              <div className="rounded bg-red-500/10 p-2 text-red-400 border border-red-500/20">
+                <Lock className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">Admin Authentication Required</h3>
+                <p className="text-[11px] text-zinc-400">Confirm administrator password to reset database</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Resetting the CMDB database and inventory restores all asset software to their initial unpatched state. Only authorized <strong className="text-red-400">Admin</strong> users can execute this operation.
+            </p>
+
+            {resetError && (
+              <div className="rounded border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{resetError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleExecuteReset} className="space-y-3.5">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Admin Username</label>
+                <input
+                  type="text"
+                  value={resetUsername}
+                  onChange={(e) => setResetUsername(e.target.value)}
+                  className="w-full rounded border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white focus:border-red-500 focus:outline-none transition-colors font-mono"
+                  placeholder="admin"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Admin Password</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    className="w-full rounded border border-zinc-800 bg-zinc-900 pl-9 pr-3 py-2 text-xs text-white focus:border-red-500 focus:outline-none transition-colors font-mono"
+                    placeholder="Enter admin password..."
+                    autoFocus
+                    required
+                  />
+                  <KeyRound className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+                </div>
+                <p className="text-[10px] text-zinc-500">Default admin password is <code className="text-zinc-400">admin</code></p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-850">
+                <button
+                  type="button"
+                  onClick={() => setShowResetModal(false)}
+                  className="rounded px-3 py-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="flex items-center gap-1.5 rounded bg-red-600 hover:bg-red-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {resetLoading ? (
+                    <>
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      Authenticating & Resetting...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-3 w-3" />
+                      Authenticate & Reset DB
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Progress Section */}
       {(scanProgress.is_scanning || scanProgress.percentage > 0) && (

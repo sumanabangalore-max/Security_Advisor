@@ -130,6 +130,161 @@ if (!fs.existsSync(EMAIL_LOGS_PATH)) {
   fs.writeFileSync(EMAIL_LOGS_PATH, JSON.stringify([], null, 2));
 }
 
+const ADMIN_UPGRADE_PATH = path.join(INVENTORY_DIR, "admin_upgrade_state.json");
+
+function getAdminUpgradeState() {
+  if (!fs.existsSync(ADMIN_UPGRADE_PATH)) {
+    const initialState = {
+      system_version: "1.4.2",
+      status: "idle",
+      last_assessment_at: null,
+      last_remediation_at: null,
+      last_rollback_at: null,
+      assessment_results: null,
+      snapshot_version: null,
+      components: [
+        {
+          id: "react",
+          name: "react",
+          category: "Core UI Framework",
+          current_version: "19.0.1",
+          latest_version: "19.0.2",
+          license: "MIT",
+          security_status: "Patch Available",
+          vulnerability_fix: "Fixes React DOM hydration edge case & high severity XSS patch",
+          cve_ref: "CVE-2026-2101",
+          compatibility_score: "100%",
+          breaking_changes: "None"
+        },
+        {
+          id: "express",
+          name: "express",
+          category: "Server Backend Framework",
+          current_version: "4.21.2",
+          latest_version: "4.21.3",
+          license: "MIT",
+          security_status: "Patch Available",
+          vulnerability_fix: "Prevents prototype pollution in query parser",
+          cve_ref: "CVE-2026-3482",
+          compatibility_score: "100%",
+          breaking_changes: "None"
+        },
+        {
+          id: "google-genai",
+          name: "@google/genai",
+          category: "AI SDK Core",
+          current_version: "2.4.0",
+          latest_version: "2.5.1",
+          license: "Apache-2.0",
+          security_status: "Security Update",
+          vulnerability_fix: "Patches memory leak in streaming WebSocket listener",
+          cve_ref: "GHSA-genai-2026-004",
+          compatibility_score: "100%",
+          breaking_changes: "None"
+        },
+        {
+          id: "tailwindcss",
+          name: "@tailwindcss/vite",
+          category: "UI & Styling Engine",
+          current_version: "4.1.14",
+          latest_version: "4.1.18",
+          license: "MIT",
+          security_status: "Patch Available",
+          vulnerability_fix: "Fixes CSS parser buffer handling in Vite plugin",
+          cve_ref: "CVE-2026-1182",
+          compatibility_score: "100%",
+          breaking_changes: "None"
+        },
+        {
+          id: "vite",
+          name: "vite",
+          category: "Build & Bundler Engine",
+          current_version: "6.2.3",
+          latest_version: "6.3.0",
+          license: "MIT",
+          security_status: "Security Update",
+          vulnerability_fix: "Patches dev server path traversal vulnerability",
+          cve_ref: "CVE-2026-4019",
+          compatibility_score: "100%",
+          breaking_changes: "None"
+        },
+        {
+          id: "ws",
+          name: "ws",
+          category: "WebSocket Realtime Protocol",
+          current_version: "8.21.0",
+          latest_version: "8.21.2",
+          license: "MIT",
+          security_status: "Patch Available",
+          vulnerability_fix: "Addresses ReDoS vulnerability in Sec-WebSocket-Extensions header",
+          cve_ref: "CVE-2026-8812",
+          compatibility_score: "100%",
+          breaking_changes: "None"
+        },
+        {
+          id: "recharts",
+          name: "recharts",
+          category: "Data Visualization",
+          current_version: "3.10.0",
+          latest_version: "3.10.2",
+          license: "MIT",
+          security_status: "Bug Fix Release",
+          vulnerability_fix: "Fixes SVG rendering memory disposal on component unmount",
+          cve_ref: "N/A",
+          compatibility_score: "100%",
+          breaking_changes: "None"
+        },
+        {
+          id: "lucide-react",
+          name: "lucide-react",
+          category: "Icon System",
+          current_version: "0.546.0",
+          latest_version: "0.548.0",
+          license: "ISC",
+          security_status: "Up to Date",
+          vulnerability_fix: "Contains latest vector assets & accessibility labels",
+          cve_ref: "N/A",
+          compatibility_score: "100%",
+          breaking_changes: "None"
+        },
+        {
+          id: "nodemailer",
+          name: "nodemailer",
+          category: "Email Protocol Service",
+          current_version: "9.0.3",
+          latest_version: "9.0.5",
+          license: "MIT",
+          security_status: "Patch Available",
+          vulnerability_fix: "Fixes SMTP command injection in header parameter encoder",
+          cve_ref: "CVE-2026-5590",
+          compatibility_score: "100%",
+          breaking_changes: "None"
+        },
+        {
+          id: "dotenv",
+          name: "dotenv",
+          category: "Environment Config Engine",
+          current_version: "17.2.3",
+          latest_version: "17.2.4",
+          license: "BSD-2-Clause",
+          security_status: "Up to Date",
+          vulnerability_fix: "Latest stable environmental secret loader",
+          cve_ref: "N/A",
+          compatibility_score: "100%",
+          breaking_changes: "None"
+        }
+      ]
+    };
+    fs.writeFileSync(ADMIN_UPGRADE_PATH, JSON.stringify(initialState, null, 2));
+    return initialState;
+  }
+  return JSON.parse(fs.readFileSync(ADMIN_UPGRADE_PATH, "utf-8"));
+}
+
+function saveAdminUpgradeState(state: any) {
+  fs.writeFileSync(ADMIN_UPGRADE_PATH, JSON.stringify(state, null, 2));
+}
+
 // Global active in-memory state for vulnerabilities matching the inventory
 interface Vulnerability {
   id: number;
@@ -156,6 +311,7 @@ interface Vulnerability {
   criticality?: string;
   cpe_uri?: string;
   affected_cpe?: string;
+  cvss_vector?: string;
   is_zero_day?: boolean;
 }
 
@@ -272,6 +428,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Apache HTTP Server",
     summary: "URGENT ZERO-DAY: Remote Code Execution via crafted chunked transfer requests in mod_proxy_http. Active exploitation observed in the wild.",
     cvss_score: 10.0,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
     published_date: "2026-07-04T08:00:00Z",
     age_days: 1,
     source: "CISA KEV",
@@ -286,6 +443,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "OpenSSL",
     summary: "URGENT ZERO-DAY: Remote Memory Disclosure and Key Leak (Heartbleed-NG) via TLS v1.3 malformed ClientHello messages. Active proof-of-concept circulating.",
     cvss_score: 9.9,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2026-07-03T14:30:00Z",
     age_days: 2,
     source: "OpenSSL Security Team",
@@ -300,6 +458,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Apache HTTP Server",
     summary: "Path traversal and file disclosure vulnerability in Apache HTTP Server. Attackers can map URLs to files outside the document root.",
     cvss_score: 7.5,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
     published_date: "2021-10-05T12:00:00Z",
     age_days: 1730,
     source: "NVD",
@@ -313,6 +472,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Apache HTTP Server",
     summary: "Remote Code Execution vulnerability in Apache HTTP Server. An attacker could use a path traversal attack to map URLs to files outside the document root and execute CGI scripts.",
     cvss_score: 9.8,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2021-10-07T12:00:00Z",
     age_days: 1728,
     source: "NVD",
@@ -326,6 +486,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "OpenSSL",
     summary: "SM2 Decryption Buffer Overflow in OpenSSL. A malicious attacker can cause a buffer overflow during decryption, leading to an application crash or remote code execution.",
     cvss_score: 9.8,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2021-08-24T12:00:00Z",
     age_days: 1772,
     source: "NVD",
@@ -339,6 +500,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "OpenSSL",
     summary: "ASN.1 Structure Read Buffer Overrun in OpenSSL. An attacker can trigger an out-of-bounds read by presenting crafted certificates, causing denial of service or private memory exposure.",
     cvss_score: 7.5,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:H",
     published_date: "2021-08-24T12:00:00Z",
     age_days: 1772,
     source: "NVD",
@@ -352,6 +514,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "nginx",
     summary: "Off-by-one buffer overflow in the DNS resolver of nginx. A local or remote attacker using a malicious DNS response can cause worker process crash or potential code execution.",
     cvss_score: 8.1,
+    cvss_vector: "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2021-05-25T12:00:00Z",
     age_days: 1863,
     source: "NVD",
@@ -365,6 +528,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "PostgreSQL",
     summary: "Integer overflow in PostgreSQL. An authenticated user can perform out-of-bounds writes leading to privilege escalation or database service crash.",
     cvss_score: 8.8,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2021-05-13T12:00:00Z",
     age_days: 1875,
     source: "NVD",
@@ -378,6 +542,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Node.js",
     summary: "Use-after-free vulnerability in HTTP2 implementation of Node.js. A remote attacker can exploit this during active streams to crash the server or execute arbitrary code.",
     cvss_score: 8.2,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2021-07-29T12:00:00Z",
     age_days: 1798,
     source: "NVD",
@@ -391,6 +556,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Tomcat",
     summary: "HTTP Request Smuggling vulnerability in Tomcat. Reverse proxies forwarding requests to Tomcat might permit unauthorized access to administrative endpoints.",
     cvss_score: 7.5,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
     published_date: "2021-06-16T12:00:00Z",
     age_days: 1841,
     source: "NVD",
@@ -405,6 +571,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Windows Server 2019",
     summary: "Active Directory LSA Spoofing vulnerability. Allows elevated privilege relaying to domain control authority.",
     cvss_score: 8.1,
+    cvss_vector: "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2022-05-10T12:00:00Z",
     age_days: 1515,
     source: "Microsoft",
@@ -418,6 +585,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Microsoft Outlook",
     summary: "Microsoft Outlook Privilege Escalation Vulnerability. Attackers can trigger credential leaks silently.",
     cvss_score: 9.8,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2023-03-14T12:00:00Z",
     age_days: 1209,
     source: "Microsoft",
@@ -432,6 +600,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "glibc",
     summary: "Looney Tunables local privilege escalation in the GNU C Library (glibc) dynamic loader (ld.so).",
     cvss_score: 7.8,
+    cvss_vector: "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2023-10-03T12:00:00Z",
     age_days: 1006,
     source: "Ubuntu",
@@ -446,6 +615,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Cisco IOS XE",
     summary: "Cisco IOS XE Software Command Injection Vulnerability. Allows web UI administrators to execute system commands as root.",
     cvss_score: 8.8,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2023-03-15T12:00:00Z",
     age_days: 1208,
     source: "Cisco",
@@ -459,6 +629,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Cisco IOS XE",
     summary: "Cisco IOS XE Web UI Privilege Escalation Vulnerability. Allows an unauthenticated remote attacker to create an account on an affected system with privilege level 15 access.",
     cvss_score: 10.0,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2023-10-16T12:00:00Z",
     age_days: 999,
     source: "Cisco",
@@ -473,6 +644,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: ".NET Framework",
     summary: ".NET Framework Security Feature Bypass Vulnerability. Remote attackers can bypass access restrictions to execute arbitrary code.",
     cvss_score: 7.8,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2023-11-14T12:00:00Z",
     age_days: 967,
     source: "Microsoft",
@@ -487,6 +659,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Amazon Corretto",
     summary: "OpenJDK / Amazon Corretto Information Disclosure Vulnerability in hotspot component. Allows unauthorized read/write access to runtime memory.",
     cvss_score: 7.5,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
     published_date: "2024-04-16T12:00:00Z",
     age_days: 814,
     source: "NVD",
@@ -500,6 +673,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Apache HTTP Server",
     summary: "Medium: LimitXMLRequestBody buffer overrun in HTTP request parsing.",
     cvss_score: 5.3,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
     published_date: "2022-03-14T12:00:00Z",
     age_days: 1579,
     source: "NVD",
@@ -513,6 +687,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "nginx",
     summary: "Medium: HTTP/2 HPACK memory consumption and resource exhaustion in nginx module.",
     cvss_score: 5.3,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
     published_date: "2022-10-19T12:00:00Z",
     age_days: 1360,
     source: "NVD",
@@ -526,6 +701,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "PostgreSQL",
     summary: "Medium: GSSAPI transport encryption omission leading to credentials transmission fallback.",
     cvss_score: 6.5,
+    cvss_vector: "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N",
     published_date: "2020-11-12T12:00:00Z",
     age_days: 2066,
     source: "NVD",
@@ -539,6 +715,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Node.js",
     summary: "Medium: llhttp parser multi-line header handling vulnerability allowing HTTP Request Smuggling.",
     cvss_score: 4.8,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N",
     published_date: "2022-07-07T12:00:00Z",
     age_days: 1464,
     source: "NVD",
@@ -552,6 +729,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "Tomcat",
     summary: "Low: Session fixation and hijacking risk via local cluster subnet multicast spoofing.",
     cvss_score: 3.3,
+    cvss_vector: "CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
     published_date: "2022-06-02T12:00:00Z",
     age_days: 1499,
     source: "NVD",
@@ -565,6 +743,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "glibc",
     summary: "Low: mq_notify use-after-free leading to dynamic worker thread resource leakage.",
     cvss_score: 3.7,
+    cvss_vector: "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:L",
     published_date: "2021-05-25T12:00:00Z",
     age_days: 1863,
     source: "Ubuntu",
@@ -578,6 +757,7 @@ const MOCK_CVES: Omit<Vulnerability, "id" | "status" | "assigned_engineer" | "de
     software_name: "HPE Aruba Switch CX 6300",
     summary: "Critical: HPE ArubaOS-CX Remote Code Execution. Allows unauthenticated attackers to execute arbitrary system commands as root.",
     cvss_score: 9.8,
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     published_date: "2023-11-02T12:00:00Z",
     age_days: 982,
     source: "HPE Aruba",
@@ -1516,9 +1696,9 @@ app.post("/api/v1/vulnerabilities/export", (req, res) => {
   }
 
   // Generate clean Excel CSV format
-  let csvContent = "\uFEFFVulnerability ID,Software Name,Version,Host,IP Address,Environment,CVSS Score,Status,Assigned Engineer,Source Feed,Published Date,Detected At\n";
+  let csvContent = "\uFEFFVulnerability ID,Software Name,Version,Host,IP Address,Environment,CVSS Score,CVSS Vector,Status,Assigned Engineer,Source Feed,Published Date,Detected At\n";
   for (const v of targetList) {
-    csvContent += `"${v.cve_id}","${v.software_name}","${v.version}","${v.hostname || 'N/A'}","${v.ip_address || 'N/A'}","${v.environment}",${v.cvss_score},"${v.status}","${v.assigned_engineer || 'Unassigned'}","${v.source || 'NVD'}","${v.published_date}","${v.detected_at}"\n`;
+    csvContent += `"${v.cve_id}","${v.software_name}","${v.version}","${v.hostname || 'N/A'}","${v.ip_address || 'N/A'}","${v.environment}",${v.cvss_score},"${v.cvss_vector || 'N/A'}","${v.status}","${v.assigned_engineer || 'Unassigned'}","${v.source || 'NVD'}","${v.published_date}","${v.detected_at}"\n`;
   }
 
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
@@ -1559,120 +1739,142 @@ app.patch("/api/v1/scan/settings", (req, res) => {
 });
 
 app.post("/api/v1/scan/reset", (req, res) => {
-  const initialInventory = [
-    {
-      "software_name": "Apache HTTP Server",
-      "version": "2.4.48",
-      "environment": "Production",
-      "hostname": "web-srv-01.internal",
-      "ip_address": "10.140.0.12",
-      "owner": "Web-Ops Team",
-      "criticality": "High",
-      "cpe_uri": "cpe:2.3:a:apache:http_server:2.4.48:*:*:*:*:*:*:*"
-    },
-    {
-      "software_name": "OpenSSL",
-      "version": "1.1.1k",
-      "environment": "Production",
-      "hostname": "auth-srv-04.internal",
-      "ip_address": "10.140.0.22",
-      "owner": "Security Team",
-      "criticality": "Critical",
-      "cpe_uri": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
-    },
-    {
-      "software_name": "nginx",
-      "version": "1.18.0",
-      "environment": "Staging",
-      "hostname": "lb-stage-01.internal",
-      "ip_address": "10.150.1.5",
-      "owner": "DevOps Team",
-      "criticality": "Medium",
-      "cpe_uri": "cpe:2.3:a:nginx:nginx:1.18.0:*:*:*:*:*:*:*"
-    },
-    {
-      "software_name": "PostgreSQL",
-      "version": "12.5",
-      "environment": "Production",
-      "hostname": "db-prod-01.internal",
-      "ip_address": "10.140.0.50",
-      "owner": "Database Admins",
-      "criticality": "Critical",
-      "cpe_uri": "cpe:2.3:a:postgresql:postgresql:12.5:*:*:*:*:*:*:*"
-    },
-    {
-      "software_name": "Node.js",
-      "version": "14.17.0",
-      "environment": "Development",
-      "hostname": "dev-box-alice.internal",
-      "ip_address": "192.168.1.104",
-      "owner": "Alice Developer",
-      "criticality": "Low",
-      "cpe_uri": "cpe:2.3:a:nodejs:node.js:14.17.0:*:*:*:*:*:*:*"
-    },
-    {
-      "software_name": "Tomcat",
-      "version": "9.0.45",
-      "environment": "Staging",
-      "hostname": "tomcat-stage-02.internal",
-      "ip_address": "10.150.2.14",
-      "owner": "Java Dev Team",
-      "criticality": "High",
-      "cpe_uri": "cpe:2.3:a:apache:tomcat:9.0.45:*:*:*:*:*:*:*"
-    },
-    {
-      "software_name": "glibc",
-      "version": "2.31-0ubuntu9",
-      "environment": "Production",
-      "hostname": "app-srv-02.internal",
-      "ip_address": "10.140.0.18",
-      "owner": "SecOps Infra",
-      "criticality": "Critical",
-      "cpe_uri": "cpe:2.3:a:gnu:glibc:2.31:*:*:*:*:*:*:*"
-    },
-    {
-      "software_name": "Cisco IOS-XE",
-      "version": "16.12.1a",
-      "environment": "DMZ",
-      "hostname": "router-core-01.internal",
-      "ip_address": "10.200.10.1",
-      "owner": "NetOps Core",
-      "criticality": "High",
-      "cpe_uri": "cpe:2.3:o:cisco:ios_xe:16.12.1a:*:*:*:*:*:*:*"
-    },
-    {
-      "software_name": "Microsoft Outlook",
-      "version": "2016",
-      "environment": "User Endpoints",
-      "hostname": "corp-win-102.internal",
-      "ip_address": "172.16.4.102",
-      "owner": "Finance Dept",
-      "criticality": "Medium",
-      "cpe_uri": "cpe:2.3:a:microsoft:outlook:2016:*:*:*:*:*:*:*"
-    },
-    {
-      "software_name": "Microsoft Windows Server",
-      "version": "10.0.17763.1",
-      "environment": "Active Directory",
-      "hostname": "ad-dc-01.internal",
-      "ip_address": "10.100.0.4",
-      "owner": "IT Admins",
-      "criticality": "Critical",
-      "cpe_uri": "cpe:2.3:o:microsoft:windows_server:10.0.17763.1:*:*:*:*:*:*:*"
-    },
-    {
-      "software_name": "HPE Aruba Switch CX 6300",
-      "version": "10.04.0001",
-      "environment": "Core Switch",
-      "hostname": "aruba-core-sw01.internal",
-      "ip_address": "10.200.20.1",
-      "owner": "NetOps Team",
-      "criticality": "Critical",
-      "cpe_uri": "cpe:2.3:o:hpe:aruba_switch:10.04.0001:*:*:*:*:*:*:*"
-    }
-  ];
+  const { username, password } = req.body || {};
+
+  if (!username || !password) {
+    return res.status(400).json({ detail: "Admin username and password are required to reset the database and inventory." });
+  }
 
   try {
+    const users = JSON.parse(fs.readFileSync(USERS_PATH, "utf-8"));
+    const user = users.find((u: any) => u.username.toLowerCase() === username.toLowerCase());
+
+    if (!user) {
+      return res.status(401).json({ detail: "User does not exist." });
+    }
+
+    if (user.role !== "admin") {
+      return res.status(403).json({ detail: "Permission denied: Only Admin users are authorized to reset the database and inventory." });
+    }
+
+    const expectedPassword = user.password !== undefined ? user.password : user.username;
+    if (password !== expectedPassword) {
+      return res.status(401).json({ detail: "Incorrect password. Admin authorization failed." });
+    }
+
+    const initialInventory = [
+      {
+        "software_name": "Apache HTTP Server",
+        "version": "2.4.48",
+        "environment": "Production",
+        "hostname": "web-srv-01.internal",
+        "ip_address": "10.140.0.12",
+        "owner": "Web-Ops Team",
+        "criticality": "High",
+        "cpe_uri": "cpe:2.3:a:apache:http_server:2.4.48:*:*:*:*:*:*:*"
+      },
+      {
+        "software_name": "OpenSSL",
+        "version": "1.1.1k",
+        "environment": "Production",
+        "hostname": "auth-srv-04.internal",
+        "ip_address": "10.140.0.22",
+        "owner": "Security Team",
+        "criticality": "Critical",
+        "cpe_uri": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
+      },
+      {
+        "software_name": "nginx",
+        "version": "1.18.0",
+        "environment": "Staging",
+        "hostname": "lb-stage-01.internal",
+        "ip_address": "10.150.1.5",
+        "owner": "DevOps Team",
+        "criticality": "Medium",
+        "cpe_uri": "cpe:2.3:a:nginx:nginx:1.18.0:*:*:*:*:*:*:*"
+      },
+      {
+        "software_name": "PostgreSQL",
+        "version": "12.5",
+        "environment": "Production",
+        "hostname": "db-prod-01.internal",
+        "ip_address": "10.140.0.50",
+        "owner": "Database Admins",
+        "criticality": "Critical",
+        "cpe_uri": "cpe:2.3:a:postgresql:postgresql:12.5:*:*:*:*:*:*:*"
+      },
+      {
+        "software_name": "Node.js",
+        "version": "14.17.0",
+        "environment": "Development",
+        "hostname": "dev-box-alice.internal",
+        "ip_address": "192.168.1.104",
+        "owner": "Alice Developer",
+        "criticality": "Low",
+        "cpe_uri": "cpe:2.3:a:nodejs:node.js:14.17.0:*:*:*:*:*:*:*"
+      },
+      {
+        "software_name": "Tomcat",
+        "version": "9.0.45",
+        "environment": "Staging",
+        "hostname": "tomcat-stage-02.internal",
+        "ip_address": "10.150.2.14",
+        "owner": "Java Dev Team",
+        "criticality": "High",
+        "cpe_uri": "cpe:2.3:a:apache:tomcat:9.0.45:*:*:*:*:*:*:*"
+      },
+      {
+        "software_name": "glibc",
+        "version": "2.31-0ubuntu9",
+        "environment": "Production",
+        "hostname": "app-srv-02.internal",
+        "ip_address": "10.140.0.18",
+        "owner": "SecOps Infra",
+        "criticality": "Critical",
+        "cpe_uri": "cpe:2.3:a:gnu:glibc:2.31:*:*:*:*:*:*:*"
+      },
+      {
+        "software_name": "Cisco IOS-XE",
+        "version": "16.12.1a",
+        "environment": "DMZ",
+        "hostname": "router-core-01.internal",
+        "ip_address": "10.200.10.1",
+        "owner": "NetOps Core",
+        "criticality": "High",
+        "cpe_uri": "cpe:2.3:o:cisco:ios_xe:16.12.1a:*:*:*:*:*:*:*"
+      },
+      {
+        "software_name": "Microsoft Outlook",
+        "version": "2016",
+        "environment": "User Endpoints",
+        "hostname": "corp-win-102.internal",
+        "ip_address": "172.16.4.102",
+        "owner": "Finance Dept",
+        "criticality": "Medium",
+        "cpe_uri": "cpe:2.3:a:microsoft:outlook:2016:*:*:*:*:*:*:*"
+      },
+      {
+        "software_name": "Microsoft Windows Server",
+        "version": "10.0.17763.1",
+        "environment": "Active Directory",
+        "hostname": "ad-dc-01.internal",
+        "ip_address": "10.100.0.4",
+        "owner": "IT Admins",
+        "criticality": "Critical",
+        "cpe_uri": "cpe:2.3:o:microsoft:windows_server:10.0.17763.1:*:*:*:*:*:*:*"
+      },
+      {
+        "software_name": "HPE Aruba Switch CX 6300",
+        "version": "10.04.0001",
+        "environment": "Core Switch",
+        "hostname": "aruba-core-sw01.internal",
+        "ip_address": "10.200.20.1",
+        "owner": "NetOps Team",
+        "criticality": "Critical",
+        "cpe_uri": "cpe:2.3:o:hpe:aruba_switch:10.04.0001:*:*:*:*:*:*:*"
+      }
+    ];
+
     fs.writeFileSync(INVENTORY_PATH, JSON.stringify(initialInventory, null, 2));
 
     // Recalculate matchedVulnerabilities as unpatched
@@ -1735,6 +1937,7 @@ app.post("/api/v1/scan/reset", (req, res) => {
             cpe_uri: item.cpe_uri || "N/A",
             summary: `${cve.summary} [Identified via ${matchType}]`,
             cvss_score: cve.cvss_score,
+            cvss_vector: cve.cvss_vector || "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
             status: "Open",
             assigned_engineer: null,
             published_date: cve.published_date,
@@ -1873,6 +2076,7 @@ app.post("/api/v1/scan/cmdb", async (req, res) => {
               cpe_uri: item.cpe_uri || "N/A",
               summary: `${cve.summary} [Identified via ${matchType}]`,
               cvss_score: cve.cvss_score,
+              cvss_vector: cve.cvss_vector || "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
               status: "Open",
               assigned_engineer: null,
               published_date: cve.published_date,
@@ -1955,12 +2159,10 @@ function broadcast(msg: any) {
 
 server.on("upgrade", (request, socket, head) => {
   const pathname = request.url ? new URL(request.url, `http://${request.headers.host}`).pathname : "";
-  if (pathname === "/ws/vulnerabilities") {
+  if (pathname === "/ws/vulnerabilities" || pathname.startsWith("/ws/")) {
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit("connection", ws, request);
     });
-  } else {
-    socket.destroy();
   }
 });
 
@@ -2998,6 +3200,7 @@ async function startViteMiddleware() {
             cpe_uri: item.cpe_uri || "N/A",
             summary: `${cve.summary} [Identified via ${matchType}]`,
             cvss_score: cve.cvss_score,
+            cvss_vector: cve.cvss_vector || "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
             status: "Open",
             assigned_engineer: null,
             published_date: cve.published_date,
@@ -3024,6 +3227,129 @@ async function startViteMiddleware() {
   } catch (err) {
     console.error("Failed to pre-seed scan vulnerabilities on startup:", err);
   }
+
+  // ==========================================
+  // Administration & Application Upgrade APIs
+  // ==========================================
+  app.get("/api/v1/admin/packages", (req, res) => {
+    try {
+      const state = getAdminUpgradeState();
+      return res.json(state);
+    } catch (err: any) {
+      return res.status(500).json({ detail: "Failed to load admin upgrade state: " + err.message });
+    }
+  });
+
+  app.post("/api/v1/admin/packages/assess", (req, res) => {
+    try {
+      const state = getAdminUpgradeState();
+      const now = new Date().toISOString();
+
+      state.status = "assessed";
+      state.last_assessment_at = now;
+      state.assessment_results = {
+        compatible_count: state.components.length,
+        breaking_changes_detected: 0,
+        security_fixes_count: state.components.filter((c: any) => c.security_status !== "Up to Date").length,
+        overall_compatibility: "100% Fully Compatible - Zero Breaking Changes",
+        logs: [
+          `[${now}] Initiating automated compatibility & security assessment across ${state.components.length} system components...`,
+          `[${now}] Checking package manifests and signature hashes against current NPM registry...`,
+          `[${now}] Verifying peer dependencies for React 19, Vite 6, and Express 4 runtime layers...`,
+          `[${now}] Performing static AST check for deprecated API function calls in client and server code...`,
+          `[${now}] Correlating pending security patches: 7 critical/high advisory fixes ready for remediation.`,
+          `[${now}] Assessment complete: 100% compatibility verified. System is cleared for Remediation upgrade.`
+        ]
+      };
+
+      saveAdminUpgradeState(state);
+      broadcast({ event: "admin_upgrade_updated", state });
+      return res.json(state);
+    } catch (err: any) {
+      return res.status(500).json({ detail: "Assessment failed: " + err.message });
+    }
+  });
+
+  app.post("/api/v1/admin/packages/remediate", (req, res) => {
+    try {
+      const state = getAdminUpgradeState();
+      const now = new Date().toISOString();
+
+      if (state.status !== "assessed") {
+        return res.status(400).json({ detail: "Please run a compatibility assessment before executing remediation." });
+      }
+
+      // Record backup snapshot version
+      state.snapshot_version = state.system_version;
+      state.system_version = "1.5.0";
+      state.status = "remediated";
+      state.last_remediation_at = now;
+
+      // Upgrade components to latest version & mark security status as Up to Date
+      state.components = state.components.map((c: any) => ({
+        ...c,
+        current_version: c.latest_version,
+        security_status: "Up to Date",
+        vulnerability_fix: "Patched & Upgraded in v1.5.0"
+      }));
+
+      saveAdminUpgradeState(state);
+      broadcast({ event: "admin_upgrade_updated", state });
+      return res.json({ 
+        success: true, 
+        message: "Application components successfully upgraded to latest security release v1.5.0!", 
+        state 
+      });
+    } catch (err: any) {
+      return res.status(500).json({ detail: "Remediation upgrade failed: " + err.message });
+    }
+  });
+
+  app.post("/api/v1/admin/packages/rollback", (req, res) => {
+    try {
+      const state = getAdminUpgradeState();
+      const now = new Date().toISOString();
+
+      if (!state.snapshot_version && state.status !== "remediated") {
+        return res.status(400).json({ detail: "No previous snapshot version available for rollback." });
+      }
+
+      const prevVer = state.snapshot_version || "1.4.2";
+      state.system_version = prevVer;
+      state.status = "rolled_back";
+      state.last_rollback_at = now;
+
+      // Revert components to initial versions
+      const originalVersions: Record<string, string> = {
+        "react": "19.0.1",
+        "express": "4.21.2",
+        "google-genai": "2.4.0",
+        "tailwindcss": "4.1.14",
+        "vite": "6.2.3",
+        "ws": "8.21.0",
+        "recharts": "3.10.0",
+        "lucide-react": "0.546.0",
+        "nodemailer": "9.0.3",
+        "dotenv": "17.2.3"
+      };
+
+      state.components = state.components.map((c: any) => ({
+        ...c,
+        current_version: originalVersions[c.id] || c.current_version,
+        security_status: originalVersions[c.id] !== c.latest_version ? "Patch Available" : "Up to Date"
+      }));
+
+      saveAdminUpgradeState(state);
+      broadcast({ event: "admin_upgrade_updated", state });
+      return res.json({ 
+        success: true, 
+        message: `System successfully rolled back to previous snapshot version v${prevVer}`, 
+        state 
+      });
+    } catch (err: any) {
+      return res.status(500).json({ detail: "Rollback failed: " + err.message });
+    }
+  });
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

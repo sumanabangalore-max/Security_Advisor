@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LogOut, ShieldAlert, Layers, Clock, Settings, MessageSquare, Coins } from "lucide-react";
+import { LogOut, ShieldAlert, Layers, Clock, Settings, MessageSquare, Coins, Building2 } from "lucide-react";
 import { api } from "../api";
 import { DashboardStats, ScanProgressState } from "../types";
 import CmdbScanPanel from "./CmdbScanPanel";
@@ -12,6 +12,7 @@ import ZeroDayAlertPanel from "./ZeroDayAlertPanel";
 import NotificationBell, { NotificationItem } from "./NotificationBell";
 import AiChatbotPanel from "./AiChatbotPanel";
 import TokenAnalyticsPanel from "./TokenAnalyticsPanel";
+import AdministrationPanel from "./AdministrationPanel";
 
 interface DashboardProps {
   username: string;
@@ -28,7 +29,7 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
     zero_day_count: 0
   });
 
-  const [activeTab, setActiveTab] = useState<"vulnerabilities" | "inventory" | "chatbot" | "eos-eol" | "config" | "token-analytics">("vulnerabilities");
+  const [activeTab, setActiveTab] = useState<"vulnerabilities" | "inventory" | "chatbot" | "eos-eol" | "config" | "token-analytics" | "administration">("vulnerabilities");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeAiEngine, setActiveAiEngine] = useState(() => {
     return localStorage.getItem("active_ai_engine") || "gemini";
@@ -240,6 +241,14 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
               <Coins className="h-4 w-4 text-purple-400" />
               Token & Cost Analytics
             </button>
+            <button
+              onClick={() => setActiveTab("administration")}
+              id="tab-administration"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "administration" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+            >
+              <Building2 className="h-4 w-4 text-blue-400" />
+              Administration
+            </button>
           </nav>
         </div>
         <div className="p-6 border-t border-zinc-800 bg-[#0c0c0e]/40">
@@ -384,6 +393,13 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
             >
               Analytics
             </button>
+            <button
+              onClick={() => setActiveTab("administration")}
+              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "administration" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
+              id="tab-administration-mobile"
+            >
+              Administration
+            </button>
           </div>
 
           {activeTab === "config" ? (
@@ -392,6 +408,8 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
             <AiChatbotPanel userRole={userRole} />
           ) : activeTab === "token-analytics" ? (
             <TokenAnalyticsPanel />
+          ) : activeTab === "administration" ? (
+            <AdministrationPanel userRole={userRole} />
           ) : (
             <div className="grid grid-cols-12 gap-6">
               {/* Main Interactive Grid */}

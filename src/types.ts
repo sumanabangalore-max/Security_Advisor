@@ -38,6 +38,7 @@ export interface Vulnerability {
   remediation_links?: string[];
   source?: string;
   affected_cpe?: string;
+  cvss_vector?: string;
   is_zero_day?: boolean;
   hostname?: string;
   ip_address?: string;
@@ -84,4 +85,37 @@ export interface DashboardStats {
   high_critical_count: number;
   total_matches_count: number;
   zero_day_count: number;
+}
+
+export interface AdminComponent {
+  id: string;
+  name: string;
+  category: string;
+  current_version: string;
+  latest_version: string;
+  license: string;
+  security_status: string;
+  vulnerability_fix: string;
+  cve_ref: string;
+  compatibility_score: string;
+  breaking_changes: string;
+}
+
+export interface AssessmentResult {
+  compatible_count: number;
+  breaking_changes_detected: number;
+  security_fixes_count: number;
+  overall_compatibility: string;
+  logs: string[];
+}
+
+export interface AdminUpgradeState {
+  system_version: string;
+  status: "idle" | "assessed" | "remediated" | "rolled_back";
+  last_assessment_at: string | null;
+  last_remediation_at: string | null;
+  last_rollback_at: string | null;
+  assessment_results: AssessmentResult | null;
+  snapshot_version: string | null;
+  components: AdminComponent[];
 }
