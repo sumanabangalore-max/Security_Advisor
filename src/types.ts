@@ -1,3 +1,15 @@
+export interface JumpHostConfig {
+  environment: string;
+  host: string;
+  ip_address: string;
+  port: number;
+  user: string;
+  auth_method: string;
+  remote_ci_cmd: string;
+  status: string;
+  target_vms_count: number;
+}
+
 export interface User {
   username: string;
   role: "admin" | "analyst" | "viewer";
@@ -17,12 +29,34 @@ export interface InventoryItem {
   cpe_uri?: string;
 }
 
+export interface PreprodStageDetail {
+  status: "COMPLETED" | "PENDING";
+  completed_at?: string | null;
+  verified_by?: string | null;
+  ci_id?: string;
+}
+
+export interface PreprodCveGate {
+  cve_id: string;
+  software_name: string;
+  stages: {
+    DEV: PreprodStageDetail;
+    SIT: PreprodStageDetail;
+    UAT: PreprodStageDetail;
+    ORT: PreprodStageDetail;
+  };
+  all_preprod_completed: boolean;
+}
+
 export interface Vulnerability {
   id: number;
   cve_id: string;
   software_id?: number;
   software_name: string;
   version: string;
+  fixed_version?: string;
+  fixed_image?: string;
+  recommended_fix?: string;
   environment: string;
   summary: string;
   cvss_score: number | null;
@@ -119,3 +153,67 @@ export interface AdminUpgradeState {
   snapshot_version: string | null;
   components: AdminComponent[];
 }
+
+export interface LdapConfig {
+  enabled: boolean;
+  server_host: string;
+  port: number;
+  security_protocol: "none" | "starttls" | "ldaps";
+  base_dn: string;
+  bind_dn: string;
+  bind_password?: string;
+  user_filter: string;
+  group_filter: string;
+  attr_username: string;
+  attr_email: string;
+  attr_name: string;
+  attr_group: string;
+  group_role_mapping: {
+    admin_group: string;
+    analyst_group: string;
+    viewer_group: string;
+  };
+  last_synced_at?: string;
+  status?: "connected" | "disconnected" | "error";
+}
+
+export interface LoggingConfig {
+  enabled: boolean;
+  active_provider: "aws" | "azure" | "syslog";
+  aws: {
+    region: string;
+    log_group: string;
+    log_stream: string;
+    access_key_id: string;
+    secret_access_key: string;
+  };
+  azure: {
+    workspace_id: string;
+    shared_key: string;
+    log_type: string;
+  };
+  syslog: {
+    host: string;
+    port: number;
+    protocol: "udp" | "tcp" | "tls";
+    format: "cef" | "leef" | "rfc5424" | "json";
+    facility: string;
+    min_severity: "info" | "warning" | "error" | "critical";
+  };
+  last_event_sent_at?: string;
+  events_forwarded_count?: number;
+}
+
+export interface ForwardedAuditLog {
+  id: string;
+  timestamp: string;
+  provider: "aws" | "azure" | "syslog";
+  severity: "INFO" | "WARNING" | "ERROR" | "CRITICAL";
+  event_type: string;
+  source_ip: string;
+  user: string;
+  message: string;
+  raw_payload: string;
+  status: "DELIVERED" | "QUEUED" | "FAILED";
+}
+

@@ -51,45 +51,45 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#09090b] px-4 py-12 text-zinc-300">
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12 text-slate-800">
       <motion.div 
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-md space-y-8 rounded-lg border border-zinc-800 bg-[#121214] p-8 shadow-2xl"
+        className="w-full max-w-md space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-xl"
         id="login-card"
       >
         <div className="text-center space-y-2">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded bg-emerald-600/10 text-emerald-400">
-            <Shield className="h-6 w-6" id="login-shield-icon" />
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-xs">
+            <Shield className="h-7 w-7" id="login-shield-icon" />
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-white">SEC_ADVISOR</h2>
-          <p className="text-sm text-zinc-500">Sign in to manage CVE matches & compliance</p>
+          <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">SecAdvisor Enterprise</h2>
+          <p className="text-xs text-slate-500 font-medium">Security Advisory Suite & Active Directory SSO</p>
         </div>
 
         {error && (
-          <div className="rounded border border-red-900/40 bg-red-950/20 p-3 text-sm text-red-400 text-center" id="login-error-msg">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700 text-center" id="login-error-msg">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Username</label>
+            <label className="text-xs font-semibold text-slate-700">Username / sAMAccountName</label>
             <div className="relative">
               <input
                 id="login-username-input"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. admin, analyst, viewer"
-                className="w-full rounded border border-zinc-700 bg-zinc-900 py-2.5 pl-3 pr-10 text-sm text-white placeholder-zinc-600 focus:border-zinc-500 focus:outline-none transition-colors"
+                placeholder="e.g. admin, analyst, or jdoe@corp.internal"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 px-3.5 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Password</label>
+            <label className="text-xs font-semibold text-slate-700">Password</label>
             <div className="relative">
               <input
                 id="login-password-input"
@@ -97,13 +97,13 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded border border-zinc-700 bg-zinc-900 py-2.5 pl-3 pr-10 text-sm text-white placeholder-zinc-600 focus:border-zinc-500 focus:outline-none transition-colors"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-3.5 pr-10 text-sm text-slate-900 placeholder-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
               />
               <button
                 type="button"
                 id="toggle-password-btn"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-zinc-500 hover:text-zinc-300"
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
               >
                 {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
               </button>
@@ -114,40 +114,38 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
             type="submit"
             id="login-submit-btn"
             disabled={loading}
-            className="w-full rounded bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500 focus:outline-none transition-all disabled:opacity-50 cursor-pointer"
+            className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-md hover:bg-indigo-700 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer"
           >
-            {loading ? "Authenticating..." : "Sign In"}
+            {loading ? "Authenticating with Active Directory..." : "Sign In to Enterprise Workspace"}
           </button>
         </form>
 
-        <div className="border-t border-zinc-800/80 pt-6 space-y-3">
-          <div className="text-center">
-            <span className="bg-[#121214] px-2 text-xs text-zinc-500 uppercase tracking-widest">Quick Sandbox Access</span>
-          </div>
+        <div className="border-t border-slate-200 pt-4 space-y-2">
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Quick Demo Profiles:</div>
           <div className="grid grid-cols-3 gap-2" id="sandbox-roles">
             <button
               onClick={() => fillCredentials("admin")}
               type="button"
-              className="rounded border border-zinc-700 bg-zinc-800 py-2 text-center text-xs font-medium text-zinc-400 hover:border-zinc-500 hover:text-white transition-all cursor-pointer"
+              className="px-2.5 py-1.5 text-xs rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 font-semibold hover:bg-indigo-100 transition-all cursor-pointer"
             >
               Admin Role
             </button>
             <button
               onClick={() => fillCredentials("analyst")}
               type="button"
-              className="rounded border border-zinc-700 bg-zinc-800 py-2 text-center text-xs font-medium text-zinc-400 hover:border-zinc-500 hover:text-white transition-all cursor-pointer"
+              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-semibold hover:bg-slate-100 transition-all cursor-pointer"
             >
               Analyst Role
             </button>
             <button
               onClick={() => fillCredentials("viewer")}
               type="button"
-              className="rounded border border-zinc-700 bg-zinc-800 py-2 text-center text-xs font-medium text-zinc-400 hover:border-zinc-500 hover:text-white transition-all cursor-pointer"
+              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-semibold hover:bg-slate-100 transition-all cursor-pointer"
             >
               Viewer Role
             </button>
           </div>
-          <p className="text-[10px] text-center text-zinc-600">Password is the same as the username (e.g. username &apos;admin&apos;, password &apos;admin&apos;)</p>
+          <p className="text-[10px] text-center text-slate-500">Password is same as username (e.g. username 'admin', password 'admin')</p>
         </div>
       </motion.div>
     </div>

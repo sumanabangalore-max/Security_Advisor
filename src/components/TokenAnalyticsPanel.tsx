@@ -72,8 +72,8 @@ export default function TokenAnalyticsPanel() {
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-xs font-mono text-zinc-500 space-y-3">
-        <RefreshCw className="h-6 w-6 animate-spin text-emerald-400 mx-auto" />
+      <div className="py-20 text-center text-xs font-mono text-slate-500 space-y-3">
+        <RefreshCw className="h-6 w-6 animate-spin text-indigo-600 mx-auto" />
         <p>Loading Token & Cost Analytics Engine...</p>
       </div>
     );
@@ -81,9 +81,9 @@ export default function TokenAnalyticsPanel() {
 
   if (error || !data) {
     return (
-      <div className="p-6 bg-[#121214] border border-zinc-800 rounded-lg text-center text-xs text-red-400 font-mono space-y-3">
+      <div className="p-6 bg-white border border-slate-200 rounded-2xl text-center text-xs text-red-600 font-mono space-y-3 shadow-xs">
         <p>{error || "Failed to display token usage."}</p>
-        <button onClick={fetchTokenAnalytics} className="px-3 py-1 bg-zinc-800 text-white rounded hover:bg-zinc-700 cursor-pointer">
+        <button onClick={fetchTokenAnalytics} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 cursor-pointer font-sans">
           Retry
         </button>
       </div>
@@ -97,34 +97,34 @@ export default function TokenAnalyticsPanel() {
   return (
     <div className="space-y-6" id="token-analytics-panel">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 border border-slate-200 rounded-2xl shadow-xs">
         <div>
-          <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            <Coins className="h-4 w-4 text-emerald-400" />
+          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <Coins className="h-4 w-4 text-emerald-600" />
             AI LLM Token & Cost Analytics
           </h3>
-          <p className="text-[11px] text-zinc-500">
-            Track daily, weekly, and monthly LLM token consumption and estimated API costs for Gemini & Ollama requests
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            Track daily, weekly, and monthly LLM token consumption and estimated API costs for GovTech AI requests
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex bg-zinc-900 border border-zinc-800 rounded p-0.5 text-[10px] font-bold">
+          <div className="flex bg-slate-100 border border-slate-200 rounded-xl p-1 text-[10px] font-bold">
             <button
               onClick={() => setTimeRange("7d")}
-              className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${timeRange === "7d" ? "bg-emerald-600 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${timeRange === "7d" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
             >
               7 Days
             </button>
             <button
               onClick={() => setTimeRange("14d")}
-              className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${timeRange === "14d" ? "bg-emerald-600 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${timeRange === "14d" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
             >
               14 Days
             </button>
             <button
               onClick={() => setTimeRange("30d")}
-              className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${timeRange === "30d" ? "bg-emerald-600 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+              className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${timeRange === "30d" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
             >
               30 Days
             </button>
@@ -132,7 +132,7 @@ export default function TokenAnalyticsPanel() {
 
           <button
             onClick={fetchTokenAnalytics}
-            className="rounded border border-zinc-800 bg-zinc-900 p-2 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs"
             title="Refresh Token Analytics"
           >
             <RefreshCw className="h-4 w-4" />
@@ -143,70 +143,70 @@ export default function TokenAnalyticsPanel() {
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Today */}
-        <div className="rounded-lg border border-zinc-800 bg-[#121214] p-4 space-y-1">
-          <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-1 shadow-xs">
+          <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
             <span>Today's Usage</span>
-            <Calendar className="h-3.5 w-3.5 text-emerald-400" />
+            <Calendar className="h-3.5 w-3.5 text-emerald-600" />
           </div>
-          <div className="text-xl font-mono font-bold text-white">
-            {data.today_tokens.toLocaleString()} <span className="text-xs font-sans text-zinc-500">Tokens</span>
+          <div className="text-xl font-mono font-bold text-slate-900">
+            {data.today_tokens.toLocaleString()} <span className="text-xs font-sans text-slate-500 font-normal">Tokens</span>
           </div>
-          <p className="text-[11px] font-mono text-emerald-400 font-bold">
+          <p className="text-[11px] font-mono text-emerald-600 font-bold">
             ${data.today_cost.toFixed(4)} USD
           </p>
         </div>
 
         {/* This Week */}
-        <div className="rounded-lg border border-zinc-800 bg-[#121214] p-4 space-y-1">
-          <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-1 shadow-xs">
+          <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
             <span>This Week (7 Days)</span>
-            <BarChart3 className="h-3.5 w-3.5 text-blue-400" />
+            <BarChart3 className="h-3.5 w-3.5 text-indigo-600" />
           </div>
-          <div className="text-xl font-mono font-bold text-white">
-            {data.week_tokens.toLocaleString()} <span className="text-xs font-sans text-zinc-500">Tokens</span>
+          <div className="text-xl font-mono font-bold text-slate-900">
+            {data.week_tokens.toLocaleString()} <span className="text-xs font-sans text-slate-500 font-normal">Tokens</span>
           </div>
-          <p className="text-[11px] font-mono text-blue-400 font-bold">
+          <p className="text-[11px] font-mono text-indigo-600 font-bold">
             ${data.week_cost.toFixed(4)} USD
           </p>
         </div>
 
         {/* This Month */}
-        <div className="rounded-lg border border-zinc-800 bg-[#121214] p-4 space-y-1">
-          <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-1 shadow-xs">
+          <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
             <span>This Month (30 Days)</span>
-            <DollarSign className="h-3.5 w-3.5 text-purple-400" />
+            <DollarSign className="h-3.5 w-3.5 text-purple-600" />
           </div>
-          <div className="text-xl font-mono font-bold text-white">
-            {data.month_tokens.toLocaleString()} <span className="text-xs font-sans text-zinc-500">Tokens</span>
+          <div className="text-xl font-mono font-bold text-slate-900">
+            {data.month_tokens.toLocaleString()} <span className="text-xs font-sans text-slate-500 font-normal">Tokens</span>
           </div>
-          <p className="text-[11px] font-mono text-purple-400 font-bold">
+          <p className="text-[11px] font-mono text-purple-600 font-bold">
             ${data.month_cost.toFixed(4)} USD
           </p>
         </div>
 
         {/* Total Queries */}
-        <div className="rounded-lg border border-zinc-800 bg-[#121214] p-4 space-y-1">
-          <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-1 shadow-xs">
+          <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
             <span>Total AI Queries</span>
-            <Zap className="h-3.5 w-3.5 text-amber-400" />
+            <Zap className="h-3.5 w-3.5 text-amber-600" />
           </div>
-          <div className="text-xl font-mono font-bold text-white">
-            {data.total_queries} <span className="text-xs font-sans text-zinc-500">Invocations</span>
+          <div className="text-xl font-mono font-bold text-slate-900">
+            {data.total_queries} <span className="text-xs font-sans text-slate-500 font-normal">Invocations</span>
           </div>
-          <p className="text-[11px] text-zinc-500">
+          <p className="text-[11px] text-slate-500">
             Advisories + Chatbot + Auto-Scans
           </p>
         </div>
       </div>
 
       {/* Main Trend Chart */}
-      <div className="rounded-lg border border-zinc-800 bg-[#121214] p-5 space-y-4">
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-xs">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
           <div>
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Token Consumption Trend Chart ({timeRange.toUpperCase()})
             </h4>
-            <p className="text-[10px] text-zinc-500">Categorized by feature: AI Advisories, Assistant Chatbot, and Automated Vulnerability Scans</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Categorized by feature: AI Advisories, Assistant Chatbot, and Automated Vulnerability Scans</p>
           </div>
         </div>
 
@@ -215,55 +215,55 @@ export default function TokenAnalyticsPanel() {
             <AreaChart data={filteredTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorAdvisory" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
                   <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="colorChat" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="colorScan" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#9333ea" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#9333ea" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-              <XAxis dataKey="date" stroke="#71717a" tick={{ fontSize: 10 }} />
-              <YAxis stroke="#71717a" tick={{ fontSize: 10 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} />
+              <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
               <Tooltip
-                contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a", borderRadius: "8px", fontSize: "11px", color: "#fff" }}
+                contentStyle={{ backgroundColor: "#ffffff", borderColor: "#cbd5e1", borderRadius: "12px", fontSize: "11px", color: "#0f172a", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }}
                 formatter={(value: any) => [`${Number(value).toLocaleString()} tokens`, ""]}
               />
               <Legend wrapperStyle={{ fontSize: "10px", paddingTop: "10px" }} />
               <Area type="monotone" dataKey="advisory_tokens" name="AI Advisories" stackId="1" stroke="#10b981" fillOpacity={1} fill="url(#colorAdvisory)" />
-              <Area type="monotone" dataKey="chat_tokens" name="AI Chatbot" stackId="1" stroke="#3b82f6" fillOpacity={1} fill="url(#colorChat)" />
-              <Area type="monotone" dataKey="scan_tokens" name="Auto-Scans" stackId="1" stroke="#a855f7" fillOpacity={1} fill="url(#colorScan)" />
+              <Area type="monotone" dataKey="chat_tokens" name="AI Chatbot" stackId="1" stroke="#4f46e5" fillOpacity={1} fill="url(#colorChat)" />
+              <Area type="monotone" dataKey="scan_tokens" name="Auto-Scans" stackId="1" stroke="#9333ea" fillOpacity={1} fill="url(#colorScan)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* Recent Activity Table */}
-      <div className="rounded-lg border border-zinc-800 bg-[#121214] p-5 space-y-4">
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-xs">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
           <div>
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Recent AI Invocations Log
             </h4>
-            <p className="text-[10px] text-zinc-500">Audit history of prompt tokens, completion tokens, and calculated cost</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Audit history of prompt tokens, completion tokens, and calculated cost</p>
           </div>
           <button
             onClick={handleResetData}
-            className="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors cursor-pointer"
+            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
           >
             Re-seed Logs
           </button>
         </div>
 
-        <div className="overflow-x-auto rounded border border-zinc-800 bg-zinc-950/25">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-950/50 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+              <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
                 <th className="px-4 py-2.5">Timestamp</th>
                 <th className="px-4 py-2.5">Feature</th>
                 <th className="px-4 py-2.5">Model</th>
@@ -274,29 +274,29 @@ export default function TokenAnalyticsPanel() {
                 <th className="px-4 py-2.5 text-right">Est. Cost</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/40 text-xs font-mono">
+            <tbody className="divide-y divide-slate-100 text-xs font-mono">
               {data.recent_logs.map((log) => (
-                <tr key={log.id} className="hover:bg-zinc-900/30 transition-colors">
-                  <td className="px-4 py-2.5 text-[10px] text-zinc-500">
+                <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-4 py-2.5 text-[10px] text-slate-500">
                     {new Date(log.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold font-sans uppercase border ${
-                      log.feature === "chat" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
-                      log.feature === "advisory" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-                      "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold font-sans uppercase border ${
+                      log.feature === "chat" ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                      log.feature === "advisory" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                      "bg-purple-50 text-purple-700 border-purple-200"
                     }`}>
                       {log.feature}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-zinc-300 text-[11px]">{log.model}</td>
-                  <td className="px-4 py-2.5 text-zinc-400 font-sans text-[11px] max-w-xs truncate">
+                  <td className="px-4 py-2.5 text-slate-700 text-[11px] font-semibold">{log.model}</td>
+                  <td className="px-4 py-2.5 text-slate-600 font-sans text-[11px] max-w-xs truncate">
                     {log.query_preview || "N/A"}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-zinc-400">{log.prompt_tokens}</td>
-                  <td className="px-4 py-2.5 text-right text-zinc-400">{log.completion_tokens}</td>
-                  <td className="px-4 py-2.5 text-right text-white font-bold">{log.total_tokens}</td>
-                  <td className="px-4 py-2.5 text-right text-emerald-400 font-bold">${log.cost_usd.toFixed(5)}</td>
+                  <td className="px-4 py-2.5 text-right text-slate-600">{log.prompt_tokens}</td>
+                  <td className="px-4 py-2.5 text-right text-slate-600">{log.completion_tokens}</td>
+                  <td className="px-4 py-2.5 text-right text-slate-900 font-bold">{log.total_tokens}</td>
+                  <td className="px-4 py-2.5 text-right text-emerald-700 font-bold">${log.cost_usd.toFixed(5)}</td>
                 </tr>
               ))}
             </tbody>

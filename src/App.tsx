@@ -44,14 +44,14 @@ export default function App() {
 
   if (!initialized) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400 font-mono text-xs">
-        Initializing Security Advisory Tracker...
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-600 font-sans text-xs font-semibold">
+        Initializing SecAdvisor Enterprise Suite...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-slate-100 font-sans text-slate-900 antialiased">
       {!token ? (
         <LoginForm onLoginSuccess={handleLoginSuccess} />
       ) : (

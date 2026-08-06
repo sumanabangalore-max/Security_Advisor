@@ -19,7 +19,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Unknown error" }));
-      throw new Error(err.detail || `Request failed with status ${res.status}`);
+      throw new Error(err.detail || err.error || err.message || `Request failed with status ${res.status}`);
     }
     return res.json();
   },
@@ -32,7 +32,20 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Unknown error" }));
-      throw new Error(err.detail || `Request failed with status ${res.status}`);
+      throw new Error(err.detail || err.error || err.message || `Request failed with status ${res.status}`);
+    }
+    return res.json();
+  },
+
+  put: async <T>(endpoint: string, body: any): Promise<T> => {
+    const res = await fetch(endpoint, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+      throw new Error(err.detail || err.error || err.message || `Request failed with status ${res.status}`);
     }
     return res.json();
   },
@@ -45,7 +58,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Unknown error" }));
-      throw new Error(err.detail || `Request failed with status ${res.status}`);
+      throw new Error(err.detail || err.error || err.message || `Request failed with status ${res.status}`);
     }
     return res.json();
   },
@@ -57,7 +70,7 @@ export const api = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Unknown error" }));
-      throw new Error(err.detail || `Request failed with status ${res.status}`);
+      throw new Error(err.detail || err.error || err.message || `Request failed with status ${res.status}`);
     }
     return res.json();
   },

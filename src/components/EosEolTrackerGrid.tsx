@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Calendar, ExternalLink, Edit2, Info, SlidersHorizontal, Save, X, Globe, CheckCircle, ChevronDown, ChevronUp, Download, Upload, FileSpreadsheet } from "lucide-react";
+import { Search, Calendar, ExternalLink, Edit2, Info, SlidersHorizontal, Save, X, Globe, CheckCircle, ChevronDown, ChevronUp, Download, Upload, FileSpreadsheet, RefreshCw } from "lucide-react";
 import { api } from "../api";
 import { EosEolRecord } from "../types";
 
@@ -18,6 +18,10 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
   const [editingRecord, setEditingRecord] = useState<EosEolRecord | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Ad-hoc EOS/EOL scan state
+  const [scanningEos, setScanningEos] = useState(false);
+  const [scanMsg, setScanMsg] = useState("");
 
   // Sorting states
   const [sortField, setSortField] = useState<keyof EosEolRecord>("software_name");
@@ -52,6 +56,22 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
       setError("Failed to fetch lifecycle registry details from database");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAdhocEosScan = async () => {
+    setScanningEos(true);
+    setScanMsg("");
+    setError("");
+    try {
+      const res = await api.post<{ success: boolean; message: string; last_check_date: string }>("/api/v1/eos-eol/scan");
+      setScanMsg(res.message);
+      await fetchRecords();
+      onEosUpdated();
+    } catch (err: any) {
+      setError("Ad-hoc scan failed: " + (err.message || "Server error"));
+    } finally {
+      setScanningEos(false);
     }
   };
 
@@ -99,6 +119,51 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
     } finally {
       setSaving(false);
     }
+  };
+
+  // Column width state & resizing
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
+    software_name: 180,
+    version: 100,
+    environment: 110,
+    status: 130,
+    eos_date: 120,
+    eol_date: 120,
+    last_check_date: 120,
+    source_checking: 150
+  });
+  const [resizingCol, setResizingCol] = useState<string | null>(null);
+  const [startX, setStartX] = useState<number>(0);
+  const [startWidth, setStartWidth] = useState<number>(0);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizingCol) return;
+      const diff = e.clientX - startX;
+      const newWidth = Math.max(60, Math.min(450, startWidth + diff));
+      setColumnWidths(prev => ({ ...prev, [resizingCol]: newWidth }));
+    };
+    const handleMouseUp = () => {
+      if (resizingCol) setResizingCol(null);
+    };
+    if (resizingCol) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [resizingCol, startX, startWidth]);
+
+  const handleAutoFitColumn = (field: string) => {
+    let maxLen = field.length;
+    records.forEach(item => {
+      const val = String((item as any)[field] ?? "");
+      if (val.length > maxLen) maxLen = val.length;
+    });
+    const autoWidth = Math.max(90, Math.min(400, maxLen * 8.5 + 40));
+    setColumnWidths(prev => ({ ...prev, [field]: autoWidth }));
   };
 
   const handleSort = (field: keyof EosEolRecord) => {
@@ -283,19 +348,40 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
 
   const renderSortHeader = (field: keyof EosEolRecord, label: string, align: "left" | "right" | "center" = "left") => {
     const isSorted = sortField === field;
+    const colWidth = columnWidths[field as string] || 130;
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      setResizingCol(field as string);
+      setStartX(e.clientX);
+      setStartWidth(colWidth);
+    };
+
     return (
       <th 
+        style={{ width: `${colWidth}px`, minWidth: '60px' }}
         onClick={() => handleSort(field)} 
-        className={`py-3 px-4 cursor-pointer hover:text-white transition-colors select-none text-[10px] font-extrabold uppercase tracking-widest ${align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left"}`}
+        onDoubleClick={(e) => { e.stopPropagation(); handleAutoFitColumn(field as string); }}
+        className={`py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none text-[10px] font-extrabold uppercase tracking-widest relative group border-r border-slate-200 text-slate-700 ${align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left"}`}
+        title="Click to sort, double-click to auto-fit width"
       >
         <div className={`flex items-center gap-1 ${align === "right" ? "justify-end" : align === "center" ? "justify-center" : "justify-start"}`}>
-          <span>{label}</span>
+          <span className="truncate">{label}</span>
           {isSorted ? (
-            sortOrder === "asc" ? <ChevronUp className="h-3 w-3 text-emerald-400" /> : <ChevronDown className="h-3 w-3 text-emerald-400" />
+            sortOrder === "asc" ? <ChevronUp className="h-3 w-3 text-indigo-600 shrink-0" /> : <ChevronDown className="h-3 w-3 text-indigo-600 shrink-0" />
           ) : (
-            <ChevronDown className="h-3 w-3 text-zinc-600 opacity-40 group-hover:opacity-100" />
+            <ChevronDown className="h-3 w-3 text-slate-400 opacity-40 group-hover:opacity-100 shrink-0" />
           )}
         </div>
+
+        <div
+          onMouseDown={handleMouseDown}
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => { e.stopPropagation(); e.preventDefault(); handleAutoFitColumn(field as string); }}
+          className="absolute right-0 top-0 bottom-0 w-2.5 hover:bg-indigo-500/50 cursor-col-resize z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Drag to resize, double-click to auto-fit"
+        />
       </th>
     );
   };
@@ -303,10 +389,10 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
   return (
     <div className="space-y-6" id="eos-eol-tracker-container">
       {/* Header and Filter Bar */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-[#121214] p-5 border border-zinc-800 rounded-lg shadow-sm">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white p-5 border border-slate-200 rounded-2xl shadow-xs">
         <div className="space-y-1">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-white">Application Lifecycle Registry (EOS/EOL)</h2>
-          <p className="text-xs text-zinc-500">Track and manage vendor Support & End-Of-Life dates tied to the CMDB master inventory</p>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900">Application Lifecycle Registry (EOS/EOL)</h2>
+          <p className="text-xs text-slate-500">Track and manage vendor Support & End-Of-Life dates tied to the CMDB master inventory</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -317,10 +403,10 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
-                  className={`px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded border transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-lg border transition-all cursor-pointer ${
                     isSelected 
-                      ? "bg-emerald-600/10 border-emerald-500 text-emerald-400 font-extrabold shadow-sm shadow-emerald-950/20" 
-                      : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400 hover:text-white hover:bg-zinc-850"
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-800 font-extrabold shadow-xs" 
+                      : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                   }`}
                 >
                   {status}
@@ -330,15 +416,37 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
           </div>
 
           <button
+            onClick={handleAdhocEosScan}
+            disabled={scanningEos}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-[10px] text-emerald-800 font-extrabold uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50"
+            title="Execute immediate ad-hoc scan to verify vendor End of Support and End of Life dates"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 text-emerald-700 ${scanningEos ? "animate-spin" : ""}`} />
+            {scanningEos ? "Scanning Feeds..." : "Ad-hoc Scan EOS/EOL"}
+          </button>
+
+          <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-zinc-700 bg-zinc-850 hover:bg-zinc-800 text-[10px] text-zinc-300 hover:text-white font-bold uppercase tracking-wider transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[10px] text-slate-700 font-bold uppercase tracking-wider transition-all cursor-pointer"
             title="Export Lifecycle Registry as CSV / Excel format"
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download className="h-3.5 w-3.5 text-indigo-600" />
             Export Excel
           </button>
         </div>
       </div>
+
+      {scanMsg && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span className="font-mono">{scanMsg}</span>
+          </div>
+          <button onClick={() => setScanMsg("")} className="text-emerald-700 hover:text-emerald-900 cursor-pointer">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {canEdit && (
         <div
@@ -346,7 +454,7 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`group border border-dashed rounded-lg p-5 flex flex-col items-center justify-center gap-2 text-center cursor-pointer transition-all ${isDragOver ? "border-emerald-500 bg-emerald-500/5" : "border-zinc-800 bg-zinc-950/20 hover:border-zinc-700 hover:bg-zinc-900/10"}`}
+          className={`group border border-dashed rounded-2xl p-5 flex flex-col items-center justify-center gap-2 text-center cursor-pointer transition-all ${isDragOver ? "border-emerald-500 bg-emerald-50/50" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50"}`}
         >
           <input
             type="file"
@@ -355,56 +463,56 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
             accept=".csv,.json"
             className="hidden"
           />
-          <Upload className={`h-8 w-8 transition-colors ${isDragOver ? "text-emerald-400" : "text-zinc-500 group-hover:text-zinc-400"}`} />
+          <Upload className={`h-8 w-8 transition-colors ${isDragOver ? "text-emerald-600" : "text-slate-400 group-hover:text-slate-600"}`} />
           <div>
-            <p className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">Upload Lifecycle Mappings</p>
-            <p className="text-[10px] text-zinc-500 mt-0.5">Drag & drop or click to upload lifecycle CSV/spreadsheet</p>
+            <p className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">Upload Lifecycle Mappings</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Drag & drop or click to upload lifecycle CSV/spreadsheet</p>
           </div>
         </div>
       )}
 
       {error && (
-        <div className="p-4 bg-red-950/20 border border-red-900/40 rounded text-xs text-red-400 font-mono flex items-start gap-2.5">
-          <Info className="h-4 w-4 mt-0.5 shrink-0" />
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-mono flex items-start gap-2.5">
+          <Info className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Main Grid View */}
-      <div className="bg-[#121214] border border-zinc-800 rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
         {/* Search Input Controls */}
-        <div className="p-4 border-b border-zinc-800/60 bg-zinc-900/30 flex items-center justify-between gap-4">
+        <div className="p-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
               placeholder="Search by software name, version, environment..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#161619] border border-zinc-850 rounded py-2 pl-9 pr-4 text-xs text-white placeholder-zinc-550 focus:outline-none focus:border-zinc-700 font-medium transition-colors"
+              className="w-full bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 font-medium transition-colors"
             />
           </div>
-          <div className="text-[10px] text-zinc-500 font-mono">
-            Matched: <span className="text-zinc-300 font-bold">{sortedRecords.length}</span> / {records.length} assets
+          <div className="text-[10px] text-slate-500 font-mono">
+            Matched: <span className="text-slate-900 font-bold">{sortedRecords.length}</span> / {records.length} assets
           </div>
         </div>
 
         {loading ? (
           <div className="p-16 flex flex-col items-center justify-center space-y-3">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
-            <p className="text-xs text-zinc-500 font-mono animate-pulse">Syncing application lifecycles...</p>
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></div>
+            <p className="text-xs text-slate-500 font-mono animate-pulse">Syncing application lifecycles...</p>
           </div>
         ) : sortedRecords.length === 0 ? (
           <div className="p-16 text-center space-y-2">
-            <SlidersHorizontal className="h-8 w-8 text-zinc-700 mx-auto" />
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">No Lifecycle Records Found</h3>
-            <p className="text-[11px] text-zinc-550 max-w-sm mx-auto">Try adjusting your search criteria or reset the CMDB inventory status</p>
+            <SlidersHorizontal className="h-8 w-8 text-slate-300 mx-auto" />
+            <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">No Lifecycle Records Found</h3>
+            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">Try adjusting your search criteria or reset the CMDB inventory status</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-zinc-900/55 border-b border-zinc-800/80 text-[10px] text-zinc-400 font-extrabold uppercase tracking-widest">
+                <tr className="bg-slate-100/80 border-b border-slate-200 text-[10px] text-slate-700 font-extrabold uppercase tracking-widest">
                   {renderSortHeader("software_name", "Software Asset")}
                   {renderSortHeader("version", "Active Version")}
                   {renderSortHeader("environment", "Environment")}
@@ -417,62 +525,62 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
                   <th className="py-3 px-4 text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-850/50">
+              <tbody className="divide-y divide-slate-100">
                 {sortedRecords.map((rec) => {
                   const isEol = rec.status === "End of Life";
                   const isEos = rec.status === "End of Support";
                   
                   return (
-                    <tr key={rec.id} className="hover:bg-zinc-900/20 text-xs font-medium text-zinc-300 transition-colors">
+                    <tr key={rec.id} className="hover:bg-slate-50/80 text-xs font-medium text-slate-700 transition-colors">
                       <td className="py-4 px-4">
-                        <div className="font-bold text-white text-xs">{rec.software_name}</div>
+                        <div className="font-bold text-slate-900 text-xs">{rec.software_name}</div>
                       </td>
-                      <td className="py-4 px-4 font-mono text-zinc-400 text-[11px]">v{rec.version}</td>
+                      <td className="py-4 px-4 font-mono text-slate-600 text-[11px]">v{rec.version}</td>
                       <td className="py-4 px-4">
-                        <span className="inline-flex items-center rounded-sm bg-zinc-800 px-1.5 py-0.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                        <span className="inline-flex items-center rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                           {rec.environment}
                         </span>
                       </td>
                       <td className="py-4 px-4">
-                        <span className="text-zinc-400 font-semibold bg-zinc-900/40 border border-zinc-850 px-2 py-0.5 rounded text-[10px]">
+                        <span className="text-slate-600 font-semibold bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md text-[10px]">
                           {rec.owner || "Unassigned"}
                         </span>
                       </td>
                       <td className="py-4 px-4">
-                        <span className={`inline-flex items-center rounded-sm px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider border ${
+                        <span className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider border ${
                           isEol 
-                            ? "bg-red-500/10 text-red-400 border-red-500/25" 
+                            ? "bg-red-50 text-red-700 border-red-200" 
                             : isEos 
-                              ? "bg-amber-500/10 text-amber-400 border-amber-500/25" 
-                              : "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
+                              ? "bg-amber-50 text-amber-700 border-amber-200" 
+                              : "bg-emerald-50 text-emerald-700 border-emerald-200"
                         }`}>
                           {rec.status}
                         </span>
                       </td>
-                      <td className="py-4 px-4 font-mono text-zinc-400 text-[11px]">{rec.eos_date}</td>
-                      <td className="py-4 px-4 font-mono text-zinc-400 text-[11px]">{rec.eol_date}</td>
-                      <td className="py-4 px-4 font-mono text-zinc-500 text-[11px]">
+                      <td className="py-4 px-4 font-mono text-slate-600 text-[11px]">{rec.eos_date}</td>
+                      <td className="py-4 px-4 font-mono text-slate-600 text-[11px]">{rec.eol_date}</td>
+                      <td className="py-4 px-4 font-mono text-slate-500 text-[11px]">
                         <div className="flex items-center gap-1.5">
-                          <Calendar className="h-3 w-3 text-zinc-600" />
+                          <Calendar className="h-3 w-3 text-slate-400" />
                           <span>{rec.last_check_date}</span>
                         </div>
                       </td>
                       <td className="py-4 px-4 text-right">
                         <div className="flex flex-col items-end gap-1">
-                          <span className="text-[10px] font-mono text-zinc-450">{rec.source_checking || "endoflife.io / Vendor Page"}</span>
+                          <span className="text-[10px] font-mono text-slate-600">{rec.source_checking || "endoflife.io / Vendor Page"}</span>
                           {rec.source_url ? (
                             <a
                               href={rec.source_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors text-[9px] uppercase font-bold tracking-wider hover:underline"
+                              className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition-colors text-[9px] uppercase font-bold tracking-wider hover:underline"
                             >
                               <Globe className="h-2.5 w-2.5" />
                               <span>View Website</span>
                               <ExternalLink className="h-2 w-2" />
                             </a>
                           ) : (
-                            <span className="text-zinc-600 font-mono text-[10px]">N/A</span>
+                            <span className="text-slate-400 font-mono text-[10px]">N/A</span>
                           )}
                         </div>
                       </td>
@@ -480,13 +588,13 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
                         <button
                           onClick={() => handleOpenEdit(rec)}
                           id={`edit-eos-btn-${rec.id}`}
-                          className="p-1.5 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer inline-flex items-center justify-center border border-transparent hover:border-zinc-700"
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-all cursor-pointer inline-flex items-center justify-center border border-transparent hover:border-slate-200"
                           title={canEdit ? "Edit Lifecycle Registry Override" : "View Lifecycle Registry Detail"}
                         >
                           {canEdit ? (
-                            <Edit2 className="h-3.5 w-3.5 text-emerald-400" />
+                            <Edit2 className="h-3.5 w-3.5 text-indigo-600" />
                           ) : (
-                            <Info className="h-3.5 w-3.5 text-zinc-500" />
+                            <Info className="h-3.5 w-3.5 text-slate-400" />
                           )}
                         </button>
                       </td>
@@ -501,22 +609,22 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
 
       {/* Edit Registry Modal Drawer */}
       {editingRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4" id="edit-lifecycle-modal">
-          <div className="w-full max-w-xl bg-[#121214] border border-zinc-800 rounded-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4" id="edit-lifecycle-modal">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/40 p-4">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center gap-2">
-                <div className="rounded bg-emerald-600/10 p-1.5 text-emerald-400">
+                <div className="rounded-xl bg-indigo-50 p-2 text-indigo-600 border border-indigo-100">
                   <SlidersHorizontal className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-white uppercase tracking-wider">Vendor Lifecycle Registry</h3>
-                  <p className="text-[10px] text-zinc-500 font-mono">Asset ID: {editingRecord.id} • {editingRecord.software_name}</p>
+                  <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider">Vendor Lifecycle Registry</h3>
+                  <p className="text-[10px] text-slate-500 font-mono">Asset ID: {editingRecord.id} • {editingRecord.software_name}</p>
                 </div>
               </div>
               <button
                 onClick={() => setEditingRecord(null)}
-                className="rounded p-1 text-zinc-550 hover:bg-zinc-850 hover:text-white transition-all cursor-pointer"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-all cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -526,42 +634,42 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
             <form onSubmit={handleSaveOverride} className="p-5 space-y-4">
               {saveSuccess ? (
                 <div className="p-8 text-center space-y-3">
-                  <div className="inline-flex rounded-full bg-emerald-500/10 p-3 text-emerald-400">
+                  <div className="inline-flex rounded-full bg-emerald-50 p-3 text-emerald-600 border border-emerald-200">
                     <CheckCircle className="h-8 w-8 animate-bounce" />
                   </div>
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">Registry Override Saved!</h3>
-                  <p className="text-[11px] text-zinc-500">The software vendor lifecycle database has been updated successfully.</p>
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Registry Override Saved!</h3>
+                  <p className="text-[11px] text-slate-500">The software vendor lifecycle database has been updated successfully.</p>
                 </div>
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Software Name</label>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">Software Name</label>
                       <input
                         type="text"
                         value={editingRecord.software_name}
                         disabled
-                        className="w-full bg-zinc-900 border border-zinc-850 rounded p-2 text-xs text-zinc-500 font-semibold focus:outline-none cursor-not-allowed"
+                        className="w-full bg-slate-100 border border-slate-200 rounded-xl p-2 text-xs text-slate-500 font-semibold focus:outline-none cursor-not-allowed"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Active Version</label>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">Active Version</label>
                       <input
                         type="text"
                         value={editingRecord.version}
                         disabled
-                        className="w-full bg-zinc-900 border border-zinc-850 rounded p-2 text-xs text-zinc-500 font-mono cursor-not-allowed"
+                        className="w-full bg-slate-100 border border-slate-200 rounded-xl p-2 text-xs text-slate-500 font-mono cursor-not-allowed"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Support Status</label>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">Support Status</label>
                     <select
                       value={editStatus}
                       onChange={(e) => setEditStatus(e.target.value as any)}
                       disabled={!canEdit}
-                      className="w-full bg-[#161619] border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-zinc-700 cursor-pointer disabled:cursor-not-allowed disabled:text-zinc-550 disabled:bg-zinc-900"
+                      className="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 cursor-pointer disabled:cursor-not-allowed disabled:text-slate-500 disabled:bg-slate-100"
                     >
                       <option value="Supported">Supported</option>
                       <option value="End of Support">End of Support (EOS)</option>
@@ -571,91 +679,91 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">End of Support Date</label>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">End of Support Date</label>
                       <input
                         type="text"
                         placeholder="YYYY-MM-DD or N/A"
                         value={editEosDate}
                         onChange={(e) => setEditEosDate(e.target.value)}
                         disabled={!canEdit}
-                        className="w-full bg-[#161619] border border-zinc-800 rounded p-2 text-xs text-white font-mono focus:outline-none focus:border-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-555 disabled:bg-zinc-900"
+                        className="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:text-slate-500 disabled:bg-slate-100"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">End of Life Date</label>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">End of Life Date</label>
                       <input
                         type="text"
                         placeholder="YYYY-MM-DD or N/A"
                         value={editEolDate}
                         onChange={(e) => setEditEolDate(e.target.value)}
                         disabled={!canEdit}
-                        className="w-full bg-[#161619] border border-zinc-800 rounded p-2 text-xs text-white font-mono focus:outline-none focus:border-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-555 disabled:bg-zinc-900"
+                        className="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:text-slate-500 disabled:bg-slate-100"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Last Check Date</label>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">Last Check Date</label>
                       <input
                         type="text"
                         placeholder="YYYY-MM-DD"
                         value={editLastCheck}
                         onChange={(e) => setEditLastCheck(e.target.value)}
                         disabled={!canEdit}
-                        className="w-full bg-[#161619] border border-zinc-800 rounded p-2 text-xs text-white font-mono focus:outline-none focus:border-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-555 disabled:bg-zinc-900"
+                        className="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 font-mono focus:outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:text-slate-500 disabled:bg-slate-100"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Check Website Source URL</label>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">Check Website Source URL</label>
                       <input
                         type="text"
                         placeholder="https://..."
                         value={editSourceUrl}
                         onChange={(e) => setEditSourceUrl(e.target.value)}
                         disabled={!canEdit}
-                        className="w-full bg-[#161619] border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-555 disabled:bg-zinc-900"
+                        className="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:text-slate-500 disabled:bg-slate-100"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Source of Checking</label>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">Source of Checking</label>
                       <input
                         type="text"
                         placeholder="e.g. endoflife.io website"
                         value={editSourceChecking}
                         onChange={(e) => setEditSourceChecking(e.target.value)}
                         disabled={!canEdit}
-                        className="w-full bg-[#161619] border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-555 disabled:bg-zinc-900"
+                        className="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:text-slate-500 disabled:bg-slate-100"
                       />
                     </div>
-                    <div className="space-y-1.5 text-zinc-550 flex flex-col justify-end text-[10px] pb-1.5">
-                      <span className="font-semibold text-zinc-400">Checking Platforms:</span>
+                    <div className="space-y-1.5 text-slate-500 flex flex-col justify-end text-[10px] pb-1.5">
+                      <span className="font-semibold text-slate-700">Checking Platforms:</span>
                       <span>• endoflife.io website</span>
                       <span>• Vendor Production Support Page</span>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Registry Notes / Recommendations</label>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">Registry Notes / Recommendations</label>
                     <textarea
                       rows={3}
                       placeholder="Enter vendor advisories, recommended patch version targets, or internal mitigation logs..."
                       value={editNotes}
                       onChange={(e) => setEditNotes(e.target.value)}
                       disabled={!canEdit}
-                      className="w-full bg-[#161619] border border-zinc-800 rounded p-2 text-xs text-white focus:outline-none focus:border-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-555 disabled:bg-zinc-900 resize-none font-medium"
+                      className="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 disabled:cursor-not-allowed disabled:text-slate-500 disabled:bg-slate-100 resize-none font-medium"
                     />
                   </div>
 
                   {/* Modal Footer Controls */}
-                  <div className="flex items-center justify-end gap-3 border-t border-zinc-800/80 pt-4 mt-2">
+                  <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4 mt-2">
                     <button
                       type="button"
                       onClick={() => setEditingRecord(null)}
-                      className="rounded border border-zinc-800 bg-zinc-900 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white hover:bg-zinc-850 cursor-pointer"
+                      className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-100 cursor-pointer"
                     >
                       {canEdit ? "CANCEL" : "CLOSE"}
                     </button>
@@ -663,7 +771,7 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
                       <button
                         type="submit"
                         disabled={saving}
-                        className="rounded bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white flex items-center gap-1.5 shadow-md shadow-emerald-950/20 cursor-pointer transition-colors"
+                        className="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-white flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
                       >
                         {saving ? (
                           <div className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent" />
@@ -673,7 +781,7 @@ export default function EosEolTrackerGrid({ userRole, refreshTrigger, onEosUpdat
                         <span>SAVE REGISTRY OVERRIDE</span>
                       </button>
                     ) : (
-                      <span className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest bg-zinc-900 px-3 py-2 rounded">Protected (Read-Only)</span>
+                      <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest bg-slate-100 px-3 py-2 rounded-lg">Protected (Read-Only)</span>
                     )}
                   </div>
                 </>

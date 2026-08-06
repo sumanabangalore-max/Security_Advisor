@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
-import { LogOut, ShieldAlert, Layers, Clock, Settings, MessageSquare, Coins, Building2 } from "lucide-react";
+import { 
+  LogOut, ShieldAlert, Layers, Clock, Settings, MessageSquare, 
+  Coins, Building2, LayoutDashboard, Cloud, ShieldCheck, Flame, ChevronRight,
+  ChevronDown, Users, Wrench, Key, Mail, Database
+} from "lucide-react";
 import { api } from "../api";
-import { DashboardStats, ScanProgressState } from "../types";
+import { DashboardStats, ScanProgressState, LdapConfig, LoggingConfig } from "../types";
 import CmdbScanPanel from "./CmdbScanPanel";
 import CveSourcesPanel from "./CveSourcesPanel";
 import VulnerabilityGrid from "./VulnerabilityGrid";
@@ -12,13 +16,31 @@ import ZeroDayAlertPanel from "./ZeroDayAlertPanel";
 import NotificationBell, { NotificationItem } from "./NotificationBell";
 import AiChatbotPanel from "./AiChatbotPanel";
 import TokenAnalyticsPanel from "./TokenAnalyticsPanel";
-import AdministrationPanel from "./AdministrationPanel";
+import AdministrationPanel, { AdminSubTab } from "./AdministrationPanel";
+import ExecutiveOverviewDashboard from "./ExecutiveOverviewDashboard";
+import LdapConfigPanel from "./LdapConfigPanel";
+import ExternalLoggingPanel from "./ExternalLoggingPanel";
+import DeployAipatchModal from "./DeployAipatchModal";
+import { Vulnerability } from "../types";
 
 interface DashboardProps {
   username: string;
   userRole: "admin" | "analyst" | "viewer";
   onLogout: () => void;
 }
+
+export type ActiveTabType = 
+  | "overview" 
+  | "vulnerabilities" 
+  | "zero-day" 
+  | "inventory" 
+  | "ldap-config" 
+  | "external-logging" 
+  | "eos-eol" 
+  | "chatbot" 
+  | "token-analytics" 
+  | "config" 
+  | "administration";
 
 export default function Dashboard({ username, userRole, onLogout }: DashboardProps) {
   const [stats, setStats] = useState<DashboardStats>({
@@ -29,11 +51,40 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
     zero_day_count: 0
   });
 
-  const [activeTab, setActiveTab] = useState<"vulnerabilities" | "inventory" | "chatbot" | "eos-eol" | "config" | "token-analytics" | "administration">("vulnerabilities");
+  const [ldapConfig, setLdapConfig] = useState<LdapConfig | null>(null);
+  const [loggingConfig, setLoggingConfig] = useState<LoggingConfig | null>(null);
+
+  // Default to Overview (Executive Landing Dashboard)
+  const [activeTab, setActiveTab] = useState<ActiveTabType>("overview");
+  const [adminSubTab, setAdminSubTab] = useState<AdminSubTab>("users");
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeAiEngine, setActiveAiEngine] = useState(() => {
-    return localStorage.getItem("active_ai_engine") || "gemini";
+    return localStorage.getItem("active_ai_engine") || "platform";
   });
+
+  // AIPatch Deploy Modal state
+  const [deployModalVuln, setDeployModalVuln] = useState<Vulnerability | null>(null);
+  const [deployModalOpen, setDeployModalOpen] = useState(false);
+
+  const handleOpenDeployModal = (vuln: Vulnerability) => {
+    setDeployModalVuln(vuln);
+    setDeployModalOpen(true);
+  };
+
+  // Handle Legacy tab redirects to Administration master panel
+  useEffect(() => {
+    if ((activeTab as string) === "ldap-config") {
+      setActiveTab("administration");
+      setAdminSubTab("ldap");
+    } else if ((activeTab as string) === "external-logging") {
+      setActiveTab("administration");
+      setAdminSubTab("siem");
+    } else if ((activeTab as string) === "config") {
+      setActiveTab("administration");
+      setAdminSubTab("smtp");
+    }
+  }, [activeTab]);
 
   // Notification Bell State
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
@@ -81,7 +132,7 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
     setNotifications([]);
   };
 
-  const toggleAiEngine = (engine: "gemini" | "ollama") => {
+  const toggleAiEngine = (engine: "platform" | "gemini") => {
     localStorage.setItem("active_ai_engine", engine);
     setActiveAiEngine(engine);
     setRefreshTrigger(prev => prev + 1);
@@ -95,7 +146,19 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
 
   useEffect(() => {
     fetchStats();
+    fetchSystemConfigs();
   }, [refreshTrigger]);
+
+  const fetchSystemConfigs = async () => {
+    try {
+      const ldapData = await api.get<LdapConfig>("/api/v1/admin/ldap/config");
+      setLdapConfig(ldapData);
+    } catch { /* ignore */ }
+    try {
+      const loggingData = await api.get<LoggingConfig>("/api/v1/admin/logging/config");
+      setLoggingConfig(loggingData);
+    } catch { /* ignore */ }
+  };
 
   // WebSocket support for live progress, status updates, and match alerts
   useEffect(() => {
@@ -121,18 +184,16 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
               percentage: msg.percentage,
               current_cve: msg.current_cve
             });
-            // Auto-refresh stats when scan completes
             if (!msg.is_scanning && msg.percentage === 100) {
               setRefreshTrigger(prev => prev + 1);
               addNotification("Scan Completed", "CMDB vulnerability scan completed.", "scan_progress");
             }
-          } else if (msg.event === "vulnerabilities_updated") {
-            setRefreshTrigger(prev => prev + 1);
-          } else if (msg.event === "status_changed") {
-            setRefreshTrigger(prev => prev + 1);
-          } else if (msg.event === "inventory_updated") {
-            setRefreshTrigger(prev => prev + 1);
-          } else if (msg.event === "zeroday_patched") {
+          } else if (
+            msg.event === "vulnerabilities_updated" ||
+            msg.event === "status_changed" ||
+            msg.event === "inventory_updated" ||
+            msg.event === "zeroday_patched"
+          ) {
             setRefreshTrigger(prev => prev + 1);
           }
         } catch (err) {
@@ -141,7 +202,6 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
       };
 
       socket.onclose = () => {
-        // Reconnect after 3 seconds
         setTimeout(connect, 3000);
       };
     }
@@ -158,113 +218,176 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
       const data = await api.get<DashboardStats>("/api/v1/dashboard/stats");
       setStats(data);
     } catch {
-      // Mock defaults if request fails
+      // Mock defaults
     }
   };
 
   const triggerScan = async (cveId?: string) => {
     try {
       await api.post("/api/v1/scan/cmdb", { cve_id: cveId });
-      // WS will update progress bar live
     } catch (err: any) {
       alert(err.message || "Failed to start scan");
     }
   };
 
+  const navItems = [
+    { id: "overview", label: "Executive Overview", icon: LayoutDashboard },
+    { id: "vulnerabilities", label: "Vulnerabilities", icon: ShieldAlert },
+    { id: "zero-day", label: "Zero-Day Radar", icon: Flame, badge: stats.zero_day_count || 1 },
+    { id: "inventory", label: "Master Inventory", icon: Layers },
+    { id: "eos-eol", label: "EOS/EOL Tracker", icon: Clock, adminOnly: true },
+    { id: "chatbot", label: "AI Security Chat", icon: MessageSquare, highlight: "AI" },
+    { id: "token-analytics", label: "Token Analytics", icon: Coins },
+    { 
+      id: "administration", 
+      label: "Administration", 
+      icon: ShieldCheck,
+      hasDropdown: true,
+      subItems: [
+        { id: "users", label: "User Directory & Roles", icon: Users },
+        { id: "ldap", label: "Active Directory LDAP", icon: Building2 },
+        { id: "siem", label: "SIEM & External Logging", icon: Cloud },
+        { id: "smtp", label: "SMTP Config", icon: Mail },
+        { id: "cve-sources", label: "CVE Source Config", icon: Database },
+        { id: "ai-platform", label: "AI Platform & API Keys", icon: Key },
+        { id: "system-patching", label: "System Patching & Upgrades", icon: Wrench },
+      ]
+    },
+  ];
+
   return (
-    <div className="flex min-h-screen bg-[#09090b] text-zinc-300 font-sans overflow-x-hidden">
+    <div className="flex min-h-screen bg-slate-100 text-slate-800 font-sans overflow-x-hidden">
       {/* Left Sidebar */}
-      <aside className="w-64 bg-[#121214] border-r border-zinc-800 flex flex-col justify-between shrink-0 hidden md:flex">
-        <div className="p-6">
-          <div className="flex items-center gap-2.5 mb-8">
-            <div className="w-8 h-8 bg-emerald-600 rounded flex items-center justify-center font-bold text-white tracking-wider">
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 hidden md:flex shadow-xs">
+        <div className="p-5">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+            <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-white text-lg tracking-wider shadow-xs">
               S
             </div>
             <div>
-              <span className="text-base font-bold tracking-tight text-white block leading-none">SEC_ADVISOR</span>
-              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">DOCKER CMDB</span>
+              <span className="text-base font-extrabold tracking-tight text-slate-900 block leading-tight">SecAdvisor</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Enterprise Security</span>
             </div>
           </div>
+
           <nav className="space-y-1">
-            <button
-              onClick={() => setActiveTab("vulnerabilities")}
-              id="tab-vulnerabilities"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "vulnerabilities" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              <ShieldAlert className="h-4 w-4" />
-              Vulnerabilities
-            </button>
-            <button
-              onClick={() => setActiveTab("inventory")}
-              id="tab-inventory"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "inventory" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              <Layers className="h-4 w-4" />
-              Master Inventory
-            </button>
-            <button
-              onClick={() => setActiveTab("chatbot")}
-              id="tab-chatbot"
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "chatbot" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              <span className="flex items-center gap-3">
-                <MessageSquare className="h-4 w-4 text-emerald-400" />
-                AI Security Chat
-              </span>
-              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] px-1.5 py-0.5 rounded font-mono font-bold">
-                AI
-              </span>
-            </button>
-            {userRole === "admin" && (
-              <button
-                onClick={() => setActiveTab("eos-eol")}
-                id="tab-eos-eol"
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "eos-eol" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-              >
-                <Clock className="h-4 w-4" />
-                EOS/EOL Tracker
-              </button>
-            )}
-            <button
-              onClick={() => setActiveTab("config")}
-              id="tab-config"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "config" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              <Settings className="h-4 w-4" />
-              Configuration
-            </button>
-            <button
-              onClick={() => setActiveTab("token-analytics")}
-              id="tab-token-analytics"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "token-analytics" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              <Coins className="h-4 w-4 text-purple-400" />
-              Token & Cost Analytics
-            </button>
-            <button
-              onClick={() => setActiveTab("administration")}
-              id="tab-administration"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer text-left ${activeTab === "administration" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              <Building2 className="h-4 w-4 text-blue-400" />
-              Administration
-            </button>
+            {navItems.map((item) => {
+              if (item.adminOnly && userRole !== "admin") return null;
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+
+              if (item.hasDropdown) {
+                return (
+                  <div 
+                    key={item.id} 
+                    className="relative group"
+                    onMouseEnter={() => setAdminMenuOpen(true)}
+                    onMouseLeave={() => setAdminMenuOpen(false)}
+                  >
+                    <button
+                      onClick={() => {
+                        setActiveTab("administration");
+                        setAdminMenuOpen(prev => !prev);
+                      }}
+                      id={`tab-${item.id}`}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-left ${
+                        isActive 
+                          ? "bg-indigo-600 text-white shadow-xs" 
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2.5 truncate">
+                        <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-white" : "text-slate-500"}`} />
+                        <span className="truncate">{item.label}</span>
+                      </span>
+
+                      <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                        adminMenuOpen || isActive ? "rotate-180 text-white" : "text-slate-400"
+                      }`} />
+                    </button>
+
+                    {/* Hover Dropdown Sub-menu */}
+                    {(adminMenuOpen || isActive) && (
+                      <div className="mt-1 ml-3 pl-3 border-l-2 border-indigo-100 space-y-1 py-1 animate-in fade-in-50 duration-150">
+                        {item.subItems?.map((sub) => {
+                          const SubIcon = sub.icon;
+                          const isSubActive = isActive && adminSubTab === sub.id;
+
+                          return (
+                            <button
+                              key={sub.id}
+                              onClick={() => {
+                                setActiveTab("administration");
+                                setAdminSubTab(sub.id as AdminSubTab);
+                              }}
+                              className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer text-left ${
+                                isSubActive
+                                  ? "bg-indigo-50 text-indigo-700 font-bold border border-indigo-100"
+                                  : "text-slate-600 hover:text-indigo-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              <SubIcon className={`h-3.5 w-3.5 ${isSubActive ? "text-indigo-600" : "text-slate-400"}`} />
+                              <span className="truncate">{sub.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id as ActiveTabType)}
+                  id={`tab-${item.id}`}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-left ${
+                    isActive 
+                      ? "bg-indigo-600 text-white shadow-xs" 
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5 truncate">
+                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-white" : "text-slate-500"}`} />
+                    <span className="truncate">{item.label}</span>
+                  </span>
+
+                  {item.badge !== undefined && (
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                      isActive ? "bg-red-500 text-white" : "bg-red-100 text-red-700 border border-red-200"
+                    }`}>
+                      {item.badge}
+                    </span>
+                  )}
+
+                  {item.highlight && (
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold font-mono ${
+                      isActive ? "bg-indigo-700 text-white" : "bg-indigo-50 text-indigo-600 border border-indigo-100"
+                    }`}>
+                      {item.highlight}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </nav>
         </div>
-        <div className="p-6 border-t border-zinc-800 bg-[#0c0c0e]/40">
+
+        <div className="p-4 border-t border-slate-200 bg-slate-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-300 uppercase">
+              <div className="w-8 h-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-xs font-extrabold text-indigo-700 uppercase">
                 {username[0] || "U"}
               </div>
               <div className="text-xs">
-                <p className="font-semibold text-white leading-none">{username}</p>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono mt-0.5">{userRole}</p>
+                <p className="font-bold text-slate-900 leading-none">{username}</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mt-0.5">{userRole}</p>
               </div>
             </div>
             <button
               onClick={onLogout}
-              className="rounded p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-850 transition-colors cursor-pointer"
+              className="rounded-lg p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
               title="Sign Out"
             >
               <LogOut className="h-4 w-4" />
@@ -276,54 +399,58 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
       {/* Right Stage Panel */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Dynamic Metric Header */}
-        <header className="h-20 border-b border-zinc-800 bg-[#09090b] flex items-center justify-between px-8 gap-6">
-          {/* Stats Segment */}
-          <div className="flex items-center gap-6 overflow-x-auto py-2 no-scrollbar">
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Total Inventory</span>
-              <span className="text-lg font-mono font-bold text-white" id="stat-inventory-count">{stats.inventory_count}</span>
+        <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6 gap-6 shadow-xs">
+          {/* Stats Summary Bar */}
+          <div className="flex items-center gap-6 overflow-x-auto py-1 no-scrollbar">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CMDB Assets:</span>
+              <span className="text-sm font-bold font-mono text-slate-900" id="stat-inventory-count">{stats.inventory_count}</span>
             </div>
-            <div className="h-8 w-px bg-zinc-800 shrink-0"></div>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Open Vulns</span>
-              <span className="text-lg font-mono font-bold text-red-400 animate-pulse" id="stat-open-count">{stats.open_vulns_count}</span>
+            <div className="h-4 w-px bg-slate-200 shrink-0"></div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Open Vulns:</span>
+              <span className="text-sm font-bold font-mono text-red-600" id="stat-open-count">{stats.open_vulns_count}</span>
             </div>
-            <div className="h-8 w-px bg-zinc-800 shrink-0"></div>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">High / Critical</span>
-              <span className="text-lg font-mono font-bold text-orange-400" id="stat-high-count">{stats.high_critical_count}</span>
+            <div className="h-4 w-px bg-slate-200 shrink-0"></div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">High/Critical:</span>
+              <span className="text-sm font-bold font-mono text-amber-600" id="stat-high-count">{stats.high_critical_count}</span>
             </div>
-            <div className="h-8 w-px bg-zinc-800 shrink-0"></div>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Total Matches</span>
-              <span className="text-lg font-mono font-bold text-emerald-400" id="stat-total-count">{stats.total_matches_count}</span>
+            <div className="h-4 w-px bg-slate-200 shrink-0"></div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Zero-Day:</span>
+              <span className="text-sm font-bold font-mono text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200" id="stat-zeroday-count">{stats.zero_day_count || 1}</span>
             </div>
           </div>
 
-          {/* WS connection and mobile actions */}
-          <div className="flex items-center gap-4 shrink-0">
-            {/* Dual-Engine AI Engine Switcher Toggle */}
-            <div className="flex items-center gap-1 bg-[#121214] border border-zinc-800 rounded p-1 text-[10px] font-bold tracking-wider uppercase">
-              <span className="px-2 text-zinc-500 text-[9px] font-mono tracking-widest hidden sm:inline">AI ENGINE:</span>
+          {/* WS Connection, AI Model Selector, Notification Bell */}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Dual-Engine AI Model Selector Toggle */}
+            <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-lg p-1 text-[10px] font-bold tracking-wider uppercase">
+              <span className="px-1.5 text-slate-500 text-[9px] font-mono tracking-widest hidden sm:inline">AI ENGINE:</span>
               <button
-                onClick={() => toggleAiEngine("gemini")}
-                className={`px-2.5 py-1 rounded transition-all cursor-pointer ${activeAiEngine === "gemini" ? "bg-emerald-600 text-white font-extrabold" : "text-zinc-550 hover:text-zinc-300 font-semibold"}`}
-                title="Use Google Gemini 3.5 Flash Cloud API"
+                onClick={() => toggleAiEngine("platform")}
+                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                  activeAiEngine === "platform" ? "bg-emerald-600 text-white font-extrabold shadow-xs" : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Use GovTech AI Platform API (api.ai.tech.gov.sg)"
               >
-                Gemini
+                GovTech AI
               </button>
               <button
-                onClick={() => toggleAiEngine("ollama")}
-                className={`px-2.5 py-1 rounded transition-all cursor-pointer ${activeAiEngine === "ollama" ? "bg-amber-500 text-zinc-950 font-extrabold" : "text-zinc-550 hover:text-zinc-300 font-semibold"}`}
-                title="Use Local Ollama Gemma/Llama models"
+                onClick={() => toggleAiEngine("gemini")}
+                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                  activeAiEngine === "gemini" ? "bg-indigo-600 text-white font-extrabold shadow-xs" : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Use Google Gemini 3.6 Flash API"
               >
-                Ollama
+                Gemini 3.6 Flash
               </button>
             </div>
 
-            <span className="inline-flex items-center gap-1.5 rounded bg-emerald-600/10 border border-emerald-500/20 px-2 py-1 text-[9px] font-bold text-emerald-400 uppercase tracking-widest font-mono">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              WS Live Connected
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[10px] font-bold text-emerald-700 uppercase tracking-wider font-mono">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              WS Connected
             </span>
 
             {/* Live Notification Bell Dropdown */}
@@ -333,11 +460,11 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
               onMarkAllAsRead={handleMarkAllAsRead}
               onClearAll={handleClearAllNotifications}
             />
-            
-            {/* Mobile/small viewport sign out button */}
+
+            {/* Mobile sign out button */}
             <button
               onClick={onLogout}
-              className="md:hidden rounded p-2 border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="md:hidden rounded-lg p-2 border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
               title="Sign Out"
             >
               <LogOut className="h-4 w-4" />
@@ -345,106 +472,49 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
           </div>
         </header>
 
-        {/* Content body - Grid container layout */}
+        {/* Main Workspace Stage */}
         <div className="flex-1 p-6 overflow-y-auto">
-          {/* Mobile Tab Selectors (Hidden on desktop) */}
-          <div className="md:hidden flex border-b border-zinc-800 mb-6 overflow-x-auto no-scrollbar gap-2" id="view-tabs">
-            <button
-              onClick={() => setActiveTab("vulnerabilities")}
-              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "vulnerabilities" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
-              id="tab-vulnerabilities-mobile"
-            >
-              Vulnerabilities
-            </button>
-            <button
-              onClick={() => setActiveTab("inventory")}
-              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "inventory" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
-              id="tab-inventory-mobile"
-            >
-              Inventory
-            </button>
-            <button
-              onClick={() => setActiveTab("chatbot")}
-              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "chatbot" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
-              id="tab-chatbot-mobile"
-            >
-              AI Chat
-            </button>
-            {userRole === "admin" && (
+          {/* Mobile Tabs */}
+          <div className="md:hidden flex border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar gap-2" id="view-tabs">
+            {navItems.map(item => (
               <button
-                onClick={() => setActiveTab("eos-eol")}
-                className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "eos-eol" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
-                id="tab-eos-eol-mobile"
+                key={item.id}
+                onClick={() => setActiveTab(item.id as ActiveTabType)}
+                className={`pb-2.5 text-xs font-bold whitespace-nowrap px-3 border-b-2 transition-colors ${
+                  activeTab === item.id 
+                    ? "border-indigo-600 text-indigo-600" 
+                    : "border-transparent text-slate-500"
+                }`}
               >
-                EOS/EOL
+                {item.label}
               </button>
-            )}
-            <button
-              onClick={() => setActiveTab("config")}
-              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "config" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
-              id="tab-config-mobile"
-            >
-              Configuration
-            </button>
-            <button
-              onClick={() => setActiveTab("token-analytics")}
-              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "token-analytics" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
-              id="tab-token-analytics-mobile"
-            >
-              Analytics
-            </button>
-            <button
-              onClick={() => setActiveTab("administration")}
-              className={`flex-1 pb-3 text-xs font-bold tracking-wider uppercase transition-colors whitespace-nowrap px-2 ${activeTab === "administration" ? "border-b-2 border-emerald-500 text-white" : "text-zinc-500"}`}
-              id="tab-administration-mobile"
-            >
-              Administration
-            </button>
+            ))}
           </div>
 
-          {activeTab === "config" ? (
-            <ConfigurationPanel userRole={userRole} />
-          ) : activeTab === "chatbot" ? (
-            <AiChatbotPanel userRole={userRole} />
-          ) : activeTab === "token-analytics" ? (
-            <TokenAnalyticsPanel />
-          ) : activeTab === "administration" ? (
-            <AdministrationPanel userRole={userRole} />
-          ) : (
+          {/* Active Tab View Rendering */}
+          {activeTab === "overview" ? (
+            <ExecutiveOverviewDashboard
+              stats={stats}
+              scanProgress={scanProgress}
+              onNavigateTab={(t, sub) => {
+                setActiveTab(t as ActiveTabType);
+                if (sub) setAdminSubTab(sub as AdminSubTab);
+              }}
+              onStartScan={triggerScan}
+              ldapConfig={ldapConfig}
+              loggingConfig={loggingConfig}
+            />
+          ) : activeTab === "vulnerabilities" ? (
             <div className="grid grid-cols-12 gap-6">
-              {/* Main Interactive Grid */}
               <div className="col-span-12 lg:col-span-8 space-y-6">
-                <ZeroDayAlertPanel
+                <VulnerabilityGrid
                   userRole={userRole}
                   refreshTrigger={refreshTrigger}
-                  onPatched={() => setRefreshTrigger(prev => prev + 1)}
+                  onStatusChanged={() => setRefreshTrigger(prev => prev + 1)}
+                  excludeZeroDays={true}
+                  onDeployAgent={(vuln) => handleOpenDeployModal(vuln)}
                 />
-
-                {activeTab === "vulnerabilities" ? (
-                  <VulnerabilityGrid
-                    userRole={userRole}
-                    refreshTrigger={refreshTrigger}
-                    onStatusChanged={() => setRefreshTrigger(prev => prev + 1)}
-                  />
-                ) : activeTab === "inventory" ? (
-                  <InventoryGrid
-                    userRole={userRole}
-                    refreshTrigger={refreshTrigger}
-                  />
-                ) : activeTab === "eos-eol" && userRole === "admin" ? (
-                  <EosEolTrackerGrid
-                    userRole={userRole}
-                    refreshTrigger={refreshTrigger}
-                    onEosUpdated={() => setRefreshTrigger(prev => prev + 1)}
-                  />
-                ) : (
-                  <div className="bg-[#121214] p-6 border border-zinc-800 rounded-lg text-center">
-                    <p className="text-xs text-zinc-500">Select an active panel above.</p>
-                  </div>
-                )}
               </div>
-
-              {/* Config Panels and Scan Controllers */}
               <div className="col-span-12 lg:col-span-4 space-y-6">
                 <CmdbScanPanel
                   userRole={userRole}
@@ -455,12 +525,54 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
                 <CveSourcesPanel
                   userRole={userRole}
                   onSourcesChanged={() => setRefreshTrigger(prev => prev + 1)}
+                  hideToggleButtons={true}
                 />
               </div>
             </div>
-          )}
+          ) : activeTab === "zero-day" ? (
+            <div className="space-y-6">
+              <ZeroDayAlertPanel
+                userRole={userRole}
+                refreshTrigger={refreshTrigger}
+                onPatched={() => setRefreshTrigger(prev => prev + 1)}
+                onDeployAgent={(vuln) => handleOpenDeployModal(vuln)}
+              />
+            </div>
+          ) : activeTab === "inventory" ? (
+            <InventoryGrid
+              userRole={userRole}
+              refreshTrigger={refreshTrigger}
+              onInventoryUpdated={() => setRefreshTrigger(prev => prev + 1)}
+            />
+          ) : activeTab === "eos-eol" ? (
+            <EosEolTrackerGrid
+              userRole={userRole}
+              refreshTrigger={refreshTrigger}
+              onEosUpdated={() => setRefreshTrigger(prev => prev + 1)}
+            />
+          ) : activeTab === "chatbot" ? (
+            <AiChatbotPanel userRole={userRole} />
+          ) : activeTab === "token-analytics" ? (
+            <TokenAnalyticsPanel />
+          ) : activeTab === "administration" ? (
+            <AdministrationPanel 
+              userRole={userRole} 
+              activeSubTab={adminSubTab}
+              onSubTabChange={(sub) => setAdminSubTab(sub)}
+            />
+          ) : null}
         </div>
       </div>
+
+      {/* AIPatch Remote CI Deploy Modal */}
+      <DeployAipatchModal
+        vulnerability={deployModalVuln}
+        isOpen={deployModalOpen}
+        onClose={() => setDeployModalOpen(false)}
+        onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+        userRole={userRole}
+      />
     </div>
   );
 }
+

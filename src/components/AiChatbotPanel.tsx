@@ -185,37 +185,37 @@ export default function AiChatbotPanel({ userRole }: AiChatbotPanelProps) {
   ];
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-[#121214] flex flex-col h-[650px] shadow-xl overflow-hidden" id="ai-chatbot-panel">
+    <div className="rounded-2xl border border-slate-200 bg-white flex flex-col h-[650px] shadow-xs overflow-hidden" id="ai-chatbot-panel">
       {/* Panel Header */}
-      <div className="flex items-center justify-between border-b border-zinc-800 p-4 bg-[#0c0c0e]">
+      <div className="flex items-center justify-between border-b border-slate-200 p-4 bg-slate-50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
             <Bot className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              SecAdvisor AI Security Assistant
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              GovTech AI Security Assistant
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                 <Sparkles className="h-3 w-3" />
                 Context Aware
               </span>
             </h3>
-            <p className="text-[10px] text-zinc-500">Live system memory: Master Inventory + CVE Matches + EOS/EOL Lifecycle</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">Live system memory: Master Inventory + CVE Matches + EOS/EOL Lifecycle</p>
           </div>
         </div>
 
         <button
           onClick={handleClearHistory}
-          className="inline-flex items-center gap-1.5 rounded border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[10px] font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer shadow-xs"
           title="Clear Conversation History"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-3.5 w-3.5 text-slate-400" />
           Clear Chat
         </button>
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#09090b]/50">
+      <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50/50">
         {messages.map((m) => {
           const isUser = m.sender === "user";
           return (
@@ -223,20 +223,22 @@ export default function AiChatbotPanel({ userRole }: AiChatbotPanelProps) {
               key={m.id}
               className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
             >
-              <div className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold shrink-0 ${
-                isUser ? "bg-emerald-600 text-white" : "bg-zinc-800 text-emerald-400 border border-zinc-700"
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+                isUser ? "bg-indigo-600 text-white" : "bg-white text-indigo-600 border border-slate-200 shadow-xs"
               }`}>
                 {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
               </div>
 
-              <div className={`max-w-[85%] rounded-lg p-4 space-y-2 ${
+              <div className={`max-w-[85%] rounded-2xl p-4 space-y-2 ${
                 isUser
-                  ? "bg-emerald-600/15 border border-emerald-500/20 text-white"
-                  : "bg-[#121214] border border-zinc-800 text-zinc-300"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "bg-white border border-slate-200 text-slate-800 shadow-xs"
               }`}>
                 {/* Meta info header */}
-                <div className="flex items-center justify-between text-[9px] text-zinc-500 font-mono border-b border-zinc-800/50 pb-1.5 mb-1">
-                  <span>{isUser ? "You" : m.modelUsed || "SecAdvisor AI"}</span>
+                <div className={`flex items-center justify-between text-[9px] font-mono border-b pb-1.5 mb-1 ${
+                  isUser ? "text-indigo-100 border-indigo-500/40" : "text-slate-400 border-slate-100"
+                }`}>
+                  <span>{isUser ? "You" : m.modelUsed || "GovTech AI"}</span>
                   <div className="flex items-center gap-2">
                     {m.tokensUsed && <span>{m.tokensUsed} tokens</span>}
                     <span>{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -252,12 +254,12 @@ export default function AiChatbotPanel({ userRole }: AiChatbotPanelProps) {
 
         {loading && (
           <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded bg-zinc-800 text-emerald-400 border border-zinc-700 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-white text-indigo-600 border border-slate-200 flex items-center justify-center shrink-0 shadow-xs">
               <Bot className="h-4 w-4 animate-bounce" />
             </div>
-            <div className="bg-[#121214] border border-zinc-800 rounded-lg p-3.5 text-xs text-zinc-400 font-mono flex items-center gap-2">
-              <RefreshCw className="h-4 w-4 animate-spin text-emerald-400" />
-              SecAdvisor AI is querying live CMDB context & Gemini model...
+            <div className="bg-white border border-slate-200 rounded-2xl p-3.5 text-xs text-slate-600 font-mono flex items-center gap-2 shadow-xs">
+              <RefreshCw className="h-4 w-4 animate-spin text-indigo-600" />
+              GovTech AI is querying live CMDB context & Gemini model...
             </div>
           </div>
         )}
@@ -266,9 +268,9 @@ export default function AiChatbotPanel({ userRole }: AiChatbotPanelProps) {
       </div>
 
       {/* Suggested Quick Prompts */}
-      <div className="p-3 border-t border-zinc-800 bg-[#0c0c0e]/80 flex flex-wrap gap-2 overflow-x-auto">
-        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1 self-center mr-1">
-          <Sparkles className="h-3 w-3 text-emerald-400" />
+      <div className="p-3 border-t border-slate-200 bg-slate-50 flex flex-wrap gap-2 overflow-x-auto">
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1 self-center mr-1">
+          <Sparkles className="h-3 w-3 text-indigo-600" />
           Quick Actions:
         </span>
         {samplePrompts.map((p, idx) => (
@@ -276,7 +278,7 @@ export default function AiChatbotPanel({ userRole }: AiChatbotPanelProps) {
             key={idx}
             onClick={() => handleSend(p)}
             disabled={loading}
-            className="text-[10px] bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 rounded px-2.5 py-1 transition-all cursor-pointer truncate max-w-xs"
+            className="text-[10px] bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer truncate max-w-xs shadow-xs"
           >
             {p}
           </button>
@@ -284,7 +286,7 @@ export default function AiChatbotPanel({ userRole }: AiChatbotPanelProps) {
       </div>
 
       {/* Input Box */}
-      <div className="p-3 border-t border-zinc-800 bg-[#121214]">
+      <div className="p-3 border-t border-slate-200 bg-white">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -298,13 +300,13 @@ export default function AiChatbotPanel({ userRole }: AiChatbotPanelProps) {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about vulnerabilities, EOL software, patching, or system risk..."
             disabled={loading}
-            className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none transition-colors"
+            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none transition-colors"
             id="chat-input-field"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="rounded bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-40 transition-colors cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
+            className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors cursor-pointer flex items-center gap-1.5 uppercase tracking-wider shadow-xs"
             id="chat-send-btn"
           >
             <Send className="h-3.5 w-3.5" />
