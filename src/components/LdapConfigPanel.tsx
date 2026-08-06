@@ -4,10 +4,10 @@ import {
   RefreshCw, Play, Search, Users, ShieldCheck, Lock, Terminal, Radio, ArrowRight, UserCheck
 } from "lucide-react";
 import { api } from "../api";
-import { LdapConfig } from "../types";
+import { LdapConfig, UserRole } from "../types";
 
 interface LdapConfigPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
 }
 
 export default function LdapConfigPanel({ userRole }: LdapConfigPanelProps) {

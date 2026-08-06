@@ -5,9 +5,10 @@ import {
   RefreshCw, Play, Clock 
 } from "lucide-react";
 import { api } from "../api";
+import { UserRole } from "../types";
 
 interface ConfigurationPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
 }
 
 interface SmtpSettings {

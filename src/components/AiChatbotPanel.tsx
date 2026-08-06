@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageSquare, Send, Bot, User, RefreshCw, Trash2, Sparkles, Terminal, Copy, Check } from "lucide-react";
 import { api } from "../api";
+import { UserRole } from "../types";
 
 interface ChatMessage {
   id: string;
@@ -12,7 +13,7 @@ interface ChatMessage {
 }
 
 interface AiChatbotPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
 }
 
 export default function AiChatbotPanel({ userRole }: AiChatbotPanelProps) {

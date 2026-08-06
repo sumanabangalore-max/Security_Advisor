@@ -1,9 +1,10 @@
 import { useState, FormEvent } from "react";
 import { Shield, Key, Eye, EyeOff } from "lucide-react";
 import { motion } from "motion/react";
+import { UserRole } from "../types";
 
 interface LoginFormProps {
-  onLoginSuccess: (token: string, username: string, role: "admin" | "analyst" | "viewer") => void;
+  onLoginSuccess: (token: string, username: string, role: UserRole) => void;
 }
 
 export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
@@ -121,31 +122,52 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
         </form>
 
         <div className="border-t border-slate-200 pt-4 space-y-2">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Quick Demo Profiles:</div>
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Quick Demo Role Profiles:</div>
           <div className="grid grid-cols-3 gap-2" id="sandbox-roles">
             <button
               onClick={() => fillCredentials("admin")}
               type="button"
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 font-semibold hover:bg-indigo-100 transition-all cursor-pointer"
+              className="px-2 py-1 text-[11px] rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 font-semibold hover:bg-indigo-100 transition-all cursor-pointer"
             >
-              Admin Role
+              Admin
+            </button>
+            <button
+              onClick={() => fillCredentials("patchmgr")}
+              type="button"
+              className="px-2 py-1 text-[11px] rounded-lg border border-purple-200 bg-purple-50 text-purple-700 font-semibold hover:bg-purple-100 transition-all cursor-pointer"
+            >
+              Patch Mgr
+            </button>
+            <button
+              onClick={() => fillCredentials("eosmgr")}
+              type="button"
+              className="px-2 py-1 text-[11px] rounded-lg border border-sky-200 bg-sky-50 text-sky-700 font-semibold hover:bg-sky-100 transition-all cursor-pointer"
+            >
+              EOS/EOL Mgr
+            </button>
+            <button
+              onClick={() => fillCredentials("vulnmgr")}
+              type="button"
+              className="px-2 py-1 text-[11px] rounded-lg border border-rose-200 bg-rose-50 text-rose-700 font-semibold hover:bg-rose-100 transition-all cursor-pointer"
+            >
+              Vuln Mgr
             </button>
             <button
               onClick={() => fillCredentials("analyst")}
               type="button"
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-semibold hover:bg-slate-100 transition-all cursor-pointer"
+              className="px-2 py-1 text-[11px] rounded-lg border border-amber-200 bg-amber-50 text-amber-700 font-semibold hover:bg-amber-100 transition-all cursor-pointer"
             >
-              Analyst Role
+              Analyst
             </button>
             <button
               onClick={() => fillCredentials("viewer")}
               type="button"
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-semibold hover:bg-slate-100 transition-all cursor-pointer"
+              className="px-2 py-1 text-[11px] rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-semibold hover:bg-slate-100 transition-all cursor-pointer"
             >
-              Viewer Role
+              Viewer
             </button>
           </div>
-          <p className="text-[10px] text-center text-slate-500">Password is same as username (e.g. username 'admin', password 'admin')</p>
+          <p className="text-[10px] text-center text-slate-500">Password is same as username (e.g. 'admin', 'patchmgr', 'eosmgr', 'vulnmgr')</p>
         </div>
       </motion.div>
     </div>

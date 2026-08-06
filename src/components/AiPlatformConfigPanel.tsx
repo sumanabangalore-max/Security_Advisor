@@ -4,6 +4,7 @@ import {
   RefreshCw, Lock, ExternalLink, Info, Check, Eye, EyeOff, Save
 } from "lucide-react";
 import { api } from "../api";
+import { UserRole } from "../types";
 
 interface AiConfigData {
   preferred_provider: "platform" | "gemini";
@@ -13,7 +14,7 @@ interface AiConfigData {
 }
 
 interface AiPlatformConfigPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
 }
 
 export default function AiPlatformConfigPanel({ userRole }: AiPlatformConfigPanelProps) {

@@ -14,11 +14,13 @@ import ConfigurationPanel from "./ConfigurationPanel";
 import CveSourcesPanel from "./CveSourcesPanel";
 import AiAgentConfigPanel from "./AiAgentConfigPanel";
 import AiPlatformConfigPanel from "./AiPlatformConfigPanel";
+import DatabaseConfigPanel from "./DatabaseConfigPanel";
+import { UserRole } from "../types";
 
-export type AdminSubTab = "users" | "ldap" | "siem" | "smtp" | "cve-sources" | "ai-platform" | "ai-agent" | "system-patching";
+export type AdminSubTab = "users" | "ldap" | "siem" | "smtp" | "cve-sources" | "ai-platform" | "ai-agent" | "db-config" | "system-patching";
 
 interface AdministrationPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
   activeSubTab?: AdminSubTab;
   onSubTabChange?: (subTab: AdminSubTab) => void;
 }
@@ -135,12 +137,13 @@ export default function AdministrationPanel({
   const subNavItems = [
     { id: "users", label: "User Access & Roles", icon: Users, desc: "Account directory & roles" },
     { id: "ldap", label: "Active Directory LDAP", icon: Building2, desc: "Windows AD domain bind & SSO" },
+    { id: "db-config", label: "DB Configuration", icon: Database, desc: "Azure PaaS & AWS RDS" },
     { id: "siem", label: "SIEM & External Logging", icon: Cloud, desc: "AWS, Azure & Syslog" },
     { id: "smtp", label: "SMTP Config", icon: Settings, desc: "SMTP server & email alerts" },
     { id: "cve-sources", label: "CVE Source Config", icon: Database, desc: "NVD API sync & source feeds" },
     { id: "ai-platform", label: "AI Platform & API Keys", icon: Key, desc: "GovTech AI & Gemini keys" },
     { id: "ai-agent", label: "AIPatch Agent Config", icon: Zap, desc: "Jump host proxies & README" },
-    { id: "system-patching", label: "System Patching & Upgrades", icon: ShieldCheck, desc: "Package upgrade & remediation" },
+    { id: "system-patching", label: "System Patching", icon: ShieldCheck, desc: "Package upgrade & remediation" },
   ];
 
   const components = upgradeState?.components || [];
@@ -208,6 +211,10 @@ export default function AdministrationPanel({
 
       {currentSubTab === "ldap" && (
         <LdapConfigPanel userRole={userRole} />
+      )}
+
+      {currentSubTab === "db-config" && (
+        <DatabaseConfigPanel userRole={userRole} />
       )}
 
       {currentSubTab === "siem" && (

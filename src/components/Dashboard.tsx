@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { 
   LogOut, ShieldAlert, Layers, Clock, Settings, MessageSquare, 
   Coins, Building2, LayoutDashboard, Cloud, ShieldCheck, Flame, ChevronRight,
-  ChevronDown, Users, Wrench, Key, Mail, Database
+  ChevronDown, Users, Wrench, Key, Mail, Database, Package
 } from "lucide-react";
 import { api } from "../api";
 import { DashboardStats, ScanProgressState, LdapConfig, LoggingConfig } from "../types";
@@ -11,6 +11,7 @@ import CveSourcesPanel from "./CveSourcesPanel";
 import VulnerabilityGrid from "./VulnerabilityGrid";
 import InventoryGrid from "./InventoryGrid";
 import EosEolTrackerGrid from "./EosEolTrackerGrid";
+import PatchTrackerGrid from "./PatchTrackerGrid";
 import ConfigurationPanel from "./ConfigurationPanel";
 import ZeroDayAlertPanel from "./ZeroDayAlertPanel";
 import NotificationBell, { NotificationItem } from "./NotificationBell";
@@ -21,11 +22,11 @@ import ExecutiveOverviewDashboard from "./ExecutiveOverviewDashboard";
 import LdapConfigPanel from "./LdapConfigPanel";
 import ExternalLoggingPanel from "./ExternalLoggingPanel";
 import DeployAipatchModal from "./DeployAipatchModal";
-import { Vulnerability } from "../types";
+import { Vulnerability, UserRole } from "../types";
 
 interface DashboardProps {
   username: string;
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
   onLogout: () => void;
 }
 
@@ -37,6 +38,7 @@ export type ActiveTabType =
   | "ldap-config" 
   | "external-logging" 
   | "eos-eol" 
+  | "patch-tracker"
   | "chatbot" 
   | "token-analytics" 
   | "config" 
@@ -72,19 +74,40 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
     setDeployModalOpen(true);
   };
 
-  // Handle Legacy tab redirects to Administration master panel
+  const isTabAllowedForRole = (tabId: string, role: UserRole): boolean => {
+    if (role === "admin") return true;
+    if (role === "patch_manager") return ["patch-tracker", "inventory", "chatbot"].includes(tabId);
+    if (role === "eos_manager") return ["eos-eol", "inventory", "chatbot"].includes(tabId);
+    if (role === "vuln_manager") return ["vulnerabilities", "zero-day", "overview", "inventory", "chatbot"].includes(tabId);
+    if (role === "analyst") return tabId !== "administration";
+    if (role === "viewer") return ["overview", "vulnerabilities", "inventory", "eos-eol", "patch-tracker"].includes(tabId);
+    return false;
+  };
+
+  // Handle Legacy tab redirects to Administration master panel and role-based page enforcement
   useEffect(() => {
     if ((activeTab as string) === "ldap-config") {
       setActiveTab("administration");
       setAdminSubTab("ldap");
+      return;
     } else if ((activeTab as string) === "external-logging") {
       setActiveTab("administration");
       setAdminSubTab("siem");
+      return;
     } else if ((activeTab as string) === "config") {
       setActiveTab("administration");
       setAdminSubTab("smtp");
+      return;
     }
-  }, [activeTab]);
+
+    // Auto-switch to first authorized page if current page is restricted for active role
+    if (!isTabAllowedForRole(activeTab, userRole)) {
+      if (userRole === "patch_manager") setActiveTab("patch-tracker");
+      else if (userRole === "eos_manager") setActiveTab("eos-eol");
+      else if (userRole === "vuln_manager") setActiveTab("vulnerabilities");
+      else setActiveTab("overview");
+    }
+  }, [activeTab, userRole]);
 
   // Notification Bell State
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
@@ -235,7 +258,8 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
     { id: "vulnerabilities", label: "Vulnerabilities", icon: ShieldAlert },
     { id: "zero-day", label: "Zero-Day Radar", icon: Flame, badge: stats.zero_day_count || 1 },
     { id: "inventory", label: "Master Inventory", icon: Layers },
-    { id: "eos-eol", label: "EOS/EOL Tracker", icon: Clock, adminOnly: true },
+    { id: "eos-eol", label: "EOS/EOL Tracker", icon: Clock },
+    { id: "patch-tracker", label: "Patch Tracker", icon: Package },
     { id: "chatbot", label: "AI Security Chat", icon: MessageSquare, highlight: "AI" },
     { id: "token-analytics", label: "Token Analytics", icon: Coins },
     { 
@@ -246,6 +270,7 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
       subItems: [
         { id: "users", label: "User Directory & Roles", icon: Users },
         { id: "ldap", label: "Active Directory LDAP", icon: Building2 },
+        { id: "db-config", label: "DB Configuration", icon: Database },
         { id: "siem", label: "SIEM & External Logging", icon: Cloud },
         { id: "smtp", label: "SMTP Config", icon: Mail },
         { id: "cve-sources", label: "CVE Source Config", icon: Database },
@@ -272,7 +297,7 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
 
           <nav className="space-y-1">
             {navItems.map((item) => {
-              if (item.adminOnly && userRole !== "admin") return null;
+              if (!isTabAllowedForRole(item.id, userRole)) return null;
               const Icon = item.icon;
               const isActive = activeTab === item.id;
 
@@ -549,6 +574,11 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
               userRole={userRole}
               refreshTrigger={refreshTrigger}
               onEosUpdated={() => setRefreshTrigger(prev => prev + 1)}
+            />
+          ) : activeTab === "patch-tracker" ? (
+            <PatchTrackerGrid
+              userRole={userRole}
+              refreshTrigger={refreshTrigger}
             />
           ) : activeTab === "chatbot" ? (
             <AiChatbotPanel userRole={userRole} />

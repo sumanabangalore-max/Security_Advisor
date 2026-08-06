@@ -4,10 +4,10 @@ import {
   RefreshCw, Play, Shield, Filter, FileText, Check, ArrowUpRight, Cpu, Layers
 } from "lucide-react";
 import { api } from "../api";
-import { LoggingConfig, ForwardedAuditLog } from "../types";
+import { LoggingConfig, ForwardedAuditLog, UserRole } from "../types";
 
 interface ExternalLoggingPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
 }
 
 export default function ExternalLoggingPanel({ userRole }: ExternalLoggingPanelProps) {

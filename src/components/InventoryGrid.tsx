@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Layers, UploadCloud, RefreshCw, FileText, CheckCircle2, Plus, X, ChevronUp, ChevronDown, Save, Edit2, Trash2, Trash } from "lucide-react";
 import { api } from "../api";
-import { InventoryItem } from "../types";
+import { InventoryItem, UserRole } from "../types";
 
 interface InventoryGridProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
   refreshTrigger: number;
   onInventoryUpdated?: () => void;
 }
@@ -17,7 +17,7 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
   const [isDragOver, setIsDragOver] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canEdit = userRole === "admin" || userRole === "analyst";
+  const canEdit = userRole === "admin" || userRole === "analyst" || userRole === "patch_manager" || userRole === "eos_manager" || userRole === "vuln_manager";
 
   // Sorting states
   const [sortField, setSortField] = useState<keyof InventoryItem>("software_name");
@@ -176,6 +176,13 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
     setSubmitting(true);
     setError("");
     setIngestMsg("");
+
+    if (!formCpeUri.trim()) {
+      setError("CPE Name (Common Platform Enumeration) is MANDATORY to fetch patches, vulnerabilities, and EOS/EOL notices.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const payload: any = {
         software_name: formSoftwareName,
@@ -293,6 +300,12 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
   const handleUpdateAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingItem || !canEdit) return;
+
+    if (!formCpeUri.trim()) {
+      setError("CPE Name (Common Platform Enumeration) is MANDATORY to fetch patches, vulnerabilities, and EOS/EOL notices.");
+      return;
+    }
+
     setSubmitting(true);
     setError("");
     try {
@@ -672,15 +685,23 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
                     className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">CPE URI</label>
-                  <input
-                    type="text"
-                    value={formCpeUri}
-                    onChange={(e) => setFormCpeUri(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-mono focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center justify-between">
+                  <span>Common Platform Enumeration (CPE Name) <span className="text-red-600 font-bold">*</span></span>
+                  <span className="text-[10px] text-red-600 font-bold uppercase tracking-wider">Mandatory</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formCpeUri}
+                  onChange={(e) => setFormCpeUri(e.target.value)}
+                  placeholder="e.g. cpe:2.3:a:apache:http_server:2.4.48:*:*:*:*:*:*:*"
+                  className="w-full bg-white border border-red-300 focus:border-emerald-500 rounded-lg p-2 text-xs text-slate-900 font-mono focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-[10px] text-slate-500 italic">
+                  Critical information: CPE identifier is mandatory to fetch security patches, vulnerabilities (CVEs), and EOS/EOL metrics.
+                </p>
+              </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
@@ -811,7 +832,7 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">Owner / Custodian</label>
                   <input
@@ -823,14 +844,21 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">Custom CPE Name (Optional)</label>
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center justify-between">
+                    <span>CPE Name (Common Platform Enumeration) <span className="text-red-600 font-bold">*</span></span>
+                    <span className="text-[10px] text-red-600 font-bold uppercase tracking-wider">Mandatory</span>
+                  </label>
                   <input
                     type="text"
-                    placeholder="e.g. cpe:2.3:a:tomcat:9.0.52..."
+                    required
+                    placeholder="e.g. cpe:2.3:a:apache:tomcat:9.0.52:*:*:*:*:*:*:*"
                     value={formCpeUri}
                     onChange={(e) => setFormCpeUri(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 font-mono focus:ring-2 focus:ring-emerald-500"
+                    className="w-full bg-white border border-red-300 focus:border-emerald-500 rounded-lg p-2 text-xs text-slate-900 font-mono focus:ring-2 focus:ring-emerald-500"
                   />
+                  <p className="text-[10px] text-slate-500 italic">
+                    Critical information: CPE identifier is mandatory to fetch security patches, vulnerabilities (CVEs), and EOS/EOL notices.
+                  </p>
                 </div>
               </div>
 

@@ -4,14 +4,14 @@ import {
   Cpu, Shield, Key, RefreshCw, Network, ArrowRight, Check, Activity
 } from "lucide-react";
 import { api } from "../api";
-import { Vulnerability, JumpHostConfig } from "../types";
+import { Vulnerability, JumpHostConfig, UserRole } from "../types";
 
 interface DeployAipatchModalProps {
   vulnerability: Vulnerability | null;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
 }
 
 const ENV_OPTIONS = ["Dev", "SIT", "UAT", "ORT", "Production"];

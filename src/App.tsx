@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import LoginForm from "./components/LoginForm";
 import Dashboard from "./components/Dashboard";
+import { UserRole } from "./types";
 
 export default function App() {
   const [token, setToken] = useState<string | null>(null);
   const [username, setUsername] = useState<string>("");
-  const [role, setRole] = useState<"admin" | "analyst" | "viewer">("viewer");
+  const [role, setRole] = useState<UserRole>("viewer");
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     // Restore session on mount
     const savedToken = localStorage.getItem("token");
     const savedUsername = localStorage.getItem("username");
-    const savedRole = localStorage.getItem("role") as any;
+    const savedRole = localStorage.getItem("role") as UserRole;
 
     if (savedToken && savedUsername && savedRole) {
       setToken(savedToken);
@@ -22,7 +23,7 @@ export default function App() {
     setInitialized(true);
   }, []);
 
-  const handleLoginSuccess = (newToken: string, newUsername: string, newRole: "admin" | "analyst" | "viewer") => {
+  const handleLoginSuccess = (newToken: string, newUsername: string, newRole: UserRole) => {
     localStorage.setItem("token", newToken);
     localStorage.setItem("username", newUsername);
     localStorage.setItem("role", newRole);

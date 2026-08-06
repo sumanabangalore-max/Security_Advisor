@@ -5,10 +5,10 @@ import {
   Check, Edit3, Save, Radio, ExternalLink, Zap
 } from "lucide-react";
 import { api } from "../api";
-import { JumpHostConfig } from "../types";
+import { JumpHostConfig, UserRole } from "../types";
 
 interface AiAgentConfigPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
 }
 
 const DEFAULT_JUMP_HOSTS: JumpHostConfig[] = [

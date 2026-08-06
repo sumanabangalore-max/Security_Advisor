@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Search, Calendar, ExternalLink, Edit2, Info, SlidersHorizontal, Save, X, Globe, CheckCircle, ChevronDown, ChevronUp, Download, Upload, FileSpreadsheet, RefreshCw } from "lucide-react";
 import { api } from "../api";
-import { EosEolRecord } from "../types";
+import { EosEolRecord, UserRole } from "../types";
 
 interface EosEolTrackerGridProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
   refreshTrigger: number;
   onEosUpdated: () => void;
 }

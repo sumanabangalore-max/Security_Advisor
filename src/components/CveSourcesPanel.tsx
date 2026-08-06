@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Database, Check } from "lucide-react";
 import { api } from "../api";
-import { CveSourcesConfig } from "../types";
+import { CveSourcesConfig, UserRole } from "../types";
 
 interface CveSourcesPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
   onSourcesChanged: () => void;
   hideToggleButtons?: boolean;
 }

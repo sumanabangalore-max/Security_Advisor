@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { ShieldAlert, Flame, Terminal, Play, CheckCircle2, ChevronDown, ChevronUp, AlertTriangle, Cpu, HelpCircle, ShieldCheck } from "lucide-react";
 import { api } from "../api";
-import { Vulnerability } from "../types";
+import { Vulnerability, UserRole } from "../types";
 
 interface ZeroDayAlertPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
   refreshTrigger: number;
   onPatched: () => void;
   onDeployAgent?: (vuln: Vulnerability) => void;

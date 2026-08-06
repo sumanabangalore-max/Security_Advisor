@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { UserCheck, Plus, Trash2, Shield, User, CircleDot, Key, X, Check } from "lucide-react";
+import { UserCheck, Plus, Trash2, Shield, User, CircleDot, Key, X, Check, Lock, Layers } from "lucide-react";
 import { api } from "../api";
+import { UserRole } from "../types";
 
 interface UserAccount {
   username: string;
-  role: "admin" | "analyst" | "viewer";
+  role: UserRole;
 }
 
 interface UserManagementPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
 }
 
 export default function UserManagementPanel({ userRole }: UserManagementPanelProps) {
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [newUsername, setNewUsername] = useState("");
-  const [newRole, setNewRole] = useState<"admin" | "analyst" | "viewer">("viewer");
+  const [newRole, setNewRole] = useState<UserRole>("viewer");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -103,7 +104,7 @@ export default function UserManagementPanel({ userRole }: UserManagementPanelPro
     }
   };
 
-  const handleUpdateRole = async (username: string, role: "admin" | "analyst" | "viewer") => {
+  const handleUpdateRole = async (username: string, role: UserRole) => {
     if (!canEdit || loading) return;
     setLoading(true);
     setError("");
@@ -122,11 +123,17 @@ export default function UserManagementPanel({ userRole }: UserManagementPanelPro
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case "admin":
-        return "bg-red-500/10 text-red-400 border border-red-500/20";
+        return "bg-red-500/10 text-red-600 border border-red-500/20";
+      case "patch_manager":
+        return "bg-purple-500/10 text-purple-700 border border-purple-500/20";
+      case "eos_manager":
+        return "bg-sky-500/10 text-sky-700 border border-sky-500/20";
+      case "vuln_manager":
+        return "bg-rose-500/10 text-rose-700 border border-rose-500/20";
       case "analyst":
-        return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+        return "bg-amber-500/10 text-amber-700 border border-amber-500/20";
       default:
-        return "bg-blue-500/10 text-blue-400 border border-blue-500/20";
+        return "bg-slate-500/10 text-slate-700 border border-slate-500/20";
     }
   };
 
@@ -216,6 +223,9 @@ export default function UserManagementPanel({ userRole }: UserManagementPanelPro
                               className="rounded-lg border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 cursor-pointer uppercase tracking-wider"
                             >
                               <option value="admin">Administrator</option>
+                              <option value="patch_manager">Patch Manager</option>
+                              <option value="eos_manager">EOS/EOL Manager</option>
+                              <option value="vuln_manager">Vulnerability Manager</option>
                               <option value="analyst">Analyst</option>
                               <option value="viewer">Viewer</option>
                             </select>
@@ -288,9 +298,12 @@ export default function UserManagementPanel({ userRole }: UserManagementPanelPro
                     onChange={(e) => setNewRole(e.target.value as any)}
                     className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none transition-colors cursor-pointer"
                   >
-                    <option value="viewer">Viewer (Read Only)</option>
-                    <option value="analyst">Analyst (Edit, Ingest, Remediation)</option>
-                    <option value="admin">Administrator (All Operations)</option>
+                    <option value="viewer">Viewer (Read Only Overview & Inventory)</option>
+                    <option value="patch_manager">Patch Manager (Patch Tracker Page Only)</option>
+                    <option value="eos_manager">EOS/EOL Manager (EOS/EOL Tracker Page Only)</option>
+                    <option value="vuln_manager">Vulnerability Manager (Vulnerability & Zero-Day Pages)</option>
+                    <option value="analyst">Analyst (Edit, Ingest & Operations)</option>
+                    <option value="admin">Administrator (All Operations & Settings)</option>
                   </select>
                 </div>
 

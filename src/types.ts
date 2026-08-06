@@ -10,9 +10,27 @@ export interface JumpHostConfig {
   target_vms_count: number;
 }
 
+export type UserRole = "admin" | "analyst" | "viewer" | "patch_manager" | "eos_manager" | "vuln_manager";
+
 export interface User {
   username: string;
-  role: "admin" | "analyst" | "viewer";
+  role: UserRole;
+}
+
+export interface DatabaseConfig {
+  provider: "azure_paas" | "aws_rds" | "custom_postgres" | "custom_mysql";
+  db_type: "postgres" | "mysql" | "mssql";
+  host: string;
+  port: number;
+  database_name: string;
+  username: string;
+  password?: string;
+  ssl_mode: "require" | "verify-full" | "prefer" | "disable";
+  max_connections: number;
+  connection_string?: string;
+  status: "connected" | "disconnected" | "testing" | "error";
+  last_tested_at?: string;
+  tables_synced?: number;
 }
 
 export interface InventoryItem {
@@ -100,6 +118,35 @@ export interface EosEolRecord {
   notes: string;
   source_checking?: string;
   owner?: string;
+}
+
+export interface PatchItem {
+  id: number;
+  software_name: string;
+  installed_version: string;
+  latest_patch_version: string;
+  patch_release_date: string;
+  patch_severity: "Critical" | "High" | "Medium" | "Low" | "Up to Date";
+  is_up_to_date: boolean;
+  hostname: string;
+  environment: string;
+  owner: string;
+  criticality: string;
+  cve_fixes: string[];
+  source_url: string;
+  release_notes_summary: string;
+  recommended_action: string;
+  last_scanned_at: string;
+}
+
+export interface PatchScheduleConfig {
+  auto_scan: boolean;
+  frequency: "daily" | "weekly" | "monthly";
+  scan_time: string;
+  last_run_at: string;
+  next_run_at: string;
+  notify_on_critical: boolean;
+  last_scanned_at?: string;
 }
 
 export interface ScanSettingsConfig {

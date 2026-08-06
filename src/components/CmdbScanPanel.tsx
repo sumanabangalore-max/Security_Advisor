@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Shield, Settings, Play, CheckCircle2, AlertTriangle, Cpu, Lock, KeyRound, X, RefreshCw } from "lucide-react";
 import { api } from "../api";
-import { ScanSettingsConfig, ScanProgressState } from "../types";
+import { ScanSettingsConfig, ScanProgressState, UserRole } from "../types";
 
 interface CmdbScanPanelProps {
-  userRole: "admin" | "analyst" | "viewer";
+  userRole: UserRole;
   scanProgress: ScanProgressState;
   onScanTriggered: (cveId?: string) => void;
   onSettingsChanged: () => void;
