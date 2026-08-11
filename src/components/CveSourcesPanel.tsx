@@ -66,8 +66,8 @@ export default function CveSourcesPanel({ userRole, onSourcesChanged, hideToggle
     {
       id: "ubuntu",
       key: "ubuntu_enabled" as keyof CveSourcesConfig,
-      name: "Ubuntu Security Bulletins",
-      description: "USN advisories tracking Linux kernel vulnerabilities, glibc exploits, and deb package patches.",
+      name: "Ubuntu Security Notices & Package Updates",
+      description: "Monitors Ubuntu Security Notices (ubuntu.com/security/notices) and package release streams (ubuntuupdates.org) for USN advisories and deb patch availability.",
     },
     {
       id: "cisco",

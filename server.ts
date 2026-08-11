@@ -4550,10 +4550,28 @@ function getPatchInfoForInventoryItem(item: any, lastScannedAt: string) {
   let patch_severity: "Critical" | "High" | "Medium" | "Low" | "Up to Date" = "Medium";
   let cve_fixes: string[] = [];
   let source_url = "https://nvd.nist.gov/vuln/detail/";
+  let secondary_source_url: string | undefined = undefined;
   let release_notes_summary = `Patch release available for ${name} updating v${ver} to latest release.`;
   let recommended_action = `Upgrade ${name} from v${ver} to latest version.`;
 
-  if (sLower.includes("cert-manager") || sLower.includes("certmanager")) {
+  if (sLower.includes("ubuntu") || sLower.includes("canonical")) {
+    patch_release_date = "2026-08-06";
+    source_url = "https://ubuntu.com/security/notices";
+    secondary_source_url = "https://www.ubuntuupdates.org/";
+    cve_fixes = ["USN-7012-1", "CVE-2026-3105", "CVE-2026-2819"];
+
+    if (compareVersions(ver, "24.04.1") >= 0) {
+      latest_patch_version = ver;
+      patch_severity = "Up to Date";
+      release_notes_summary = `Ubuntu OS v${ver} is running the latest security patch release level. Monitored via https://ubuntu.com/security/notices and https://www.ubuntuupdates.org/`;
+      recommended_action = "No action required. System is running the latest Ubuntu security updates.";
+    } else {
+      latest_patch_version = "24.04.1 LTS";
+      patch_severity = "Critical";
+      release_notes_summary = `Ubuntu Security Notices (USN-7012-1) update available addressing Linux Kernel privilege escalation & glibc buffer overflow. Monitored via https://ubuntu.com/security/notices and https://www.ubuntuupdates.org/`;
+      recommended_action = `sudo apt-get update && sudo apt-get dist-upgrade -y`;
+    }
+  } else if (sLower.includes("cert-manager") || sLower.includes("certmanager")) {
     patch_release_date = "2026-07-28";
     source_url = "https://cert-manager.io/docs/releases/";
     cve_fixes = ["CVE-2026-25518", "CVE-2026-62290", "CVE-2025-3171"];
@@ -4681,6 +4699,7 @@ function getPatchInfoForInventoryItem(item: any, lastScannedAt: string) {
     criticality: item.criticality || "Medium",
     cve_fixes,
     source_url,
+    secondary_source_url,
     release_notes_summary,
     recommended_action,
     last_scanned_at: lastScannedAt

@@ -111,7 +111,7 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
 
   const handleExportCSV = () => {
     if (patches.length === 0) return;
-    const headers = ["Software", "Installed Version", "Latest Patch", "Release Date", "Severity", "Hostname", "Environment", "Source URL", "Action"];
+    const headers = ["Software", "Installed Version", "Latest Patch", "Release Date", "Severity", "Hostname", "Environment", "Source URL", "Secondary Source URL", "Action"];
     const rows = patches.map(p => [
       `"${p.software_name}"`,
       `"${p.installed_version}"`,
@@ -121,6 +121,7 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
       `"${p.hostname}"`,
       `"${p.environment}"`,
       `"${p.source_url}"`,
+      `"${p.secondary_source_url || ""}"`,
       `"${p.recommended_action.replace(/"/g, '""')}"`
     ]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -447,8 +448,11 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                     </td>
 
                     {/* Release Date */}
-                    <td className="py-3.5 px-4 text-xs text-slate-600 font-mono">
-                      {patch.patch_release_date}
+                    <td className="py-3.5 px-4 text-xs font-mono">
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100/90 text-slate-800 font-semibold border border-slate-200">
+                        <Calendar className="w-3 h-3 text-indigo-600 shrink-0" />
+                        <span>{patch.patch_release_date}</span>
+                      </div>
                     </td>
 
                     {/* Patch Severity */}
@@ -475,15 +479,30 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
 
                     {/* Source of Truth Link */}
                     <td className="py-3.5 px-4">
-                      <a
-                        href={patch.source_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
-                      >
-                        Official Release
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                      <div className="flex flex-col gap-1">
+                        <a
+                          href={patch.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
+                          title={patch.source_url}
+                        >
+                          <span>{patch.software_name.toLowerCase().includes("ubuntu") ? "USN Notices" : "Official Release"}</span>
+                          <ExternalLink className="w-3 h-3 shrink-0" />
+                        </a>
+                        {patch.secondary_source_url && (
+                          <a
+                            href={patch.secondary_source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:text-emerald-900 hover:underline font-medium"
+                            title={patch.secondary_source_url}
+                          >
+                            <span>UbuntuUpdates</span>
+                            <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                          </a>
+                        )}
+                      </div>
                     </td>
 
                     {/* Actions */}
@@ -511,12 +530,13 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className={`px-2.5 py-0.5 rounded-full text-xs border ${getSeverityBadgeClass(selectedPatch.patch_severity)}`}>
                     {selectedPatch.patch_severity} Severity
                   </span>
-                  <span className="text-xs text-slate-500 font-mono">
-                    Release: {selectedPatch.patch_release_date}
+                  <span className="inline-flex items-center gap-1.5 text-xs text-slate-700 font-mono font-semibold bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                    Released: {selectedPatch.patch_release_date}
                   </span>
                 </div>
                 <h2 className="text-xl font-bold text-slate-900">
@@ -604,16 +624,29 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
             </div>
 
             {/* Official Source Link */}
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-              <a
-                href={selectedPatch.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-semibold hover:underline"
-              >
-                Open Vendor Release Advisory Page
-                <ExternalLink className="w-4 h-4" />
-              </a>
+            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={selectedPatch.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold rounded-lg transition"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  {selectedPatch.software_name.toLowerCase().includes("ubuntu") ? "Ubuntu Security Notices (ubuntu.com)" : "Open Vendor Release Advisory Page"}
+                </a>
+                {selectedPatch.secondary_source_url && (
+                  <a
+                    href={selectedPatch.secondary_source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-lg transition"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Ubuntu Package Releases (ubuntuupdates.org)
+                  </a>
+                )}
+              </div>
 
               <button
                 onClick={() => setSelectedPatch(null)}

@@ -134,6 +134,7 @@ export interface PatchItem {
   criticality: string;
   cve_fixes: string[];
   source_url: string;
+  secondary_source_url?: string;
   release_notes_summary: string;
   recommended_action: string;
   last_scanned_at: string;
