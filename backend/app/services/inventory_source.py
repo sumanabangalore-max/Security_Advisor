@@ -16,9 +16,16 @@ def get_newest_inventory_file() -> tuple[Optional[str], Optional[str]]:
         return None, None
 
     system_files = {
+        "ai_config.json",
         "cve_sources.json",
+        "db_config.json",
         "email_logs.json",
         "eos_eol_overrides.json",
+        "forwarded_logs.json",
+        "jump_hosts.json",
+        "ldap_config.json",
+        "logging_config.json",
+        "patch_schedule.json",
         "scan_settings.json",
         "smtp_settings.json",
         "users.json"
@@ -26,7 +33,7 @@ def get_newest_inventory_file() -> tuple[Optional[str], Optional[str]]:
 
     files = []
     for f in os.listdir(INVENTORY_DIR):
-        if f in system_files:
+        if f in system_files or f.endswith(("_config.json", "_settings.json", "_logs.json", "_schedule.json", "_hosts.json")):
             continue
         if f.endswith(('.json', '.xlsx', '.csv')):
             files.append(os.path.join(INVENTORY_DIR, f))
@@ -92,17 +99,28 @@ def convert_to_json(source_file: str, ext: str) -> str:
 
 def resolve_inventory() -> list[dict]:
     newest, ext = get_newest_inventory_file()
-    if not newest:
-        return []
-
-    # Check if we need to convert
     json_path = os.path.join(INVENTORY_DIR, "inventory.json")
-    if newest != json_path:
-        # If xlsx or csv is newer than the existing json, convert it
+
+    if newest and newest != json_path:
         if not os.path.exists(json_path) or os.path.getmtime(newest) > os.path.getmtime(json_path):
-            json_path = convert_to_json(newest, ext)
+            try:
+                converted = convert_to_json(newest, ext)
+                if converted:
+                    json_path = converted
+            except Exception as e:
+                print(f"Warning: Failed to convert {newest} to json: {e}")
 
     if os.path.exists(json_path):
-        with open(json_path, "r") as f:
-            return json.load(f)
+        try:
+            with open(json_path, "r") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return [r for r in data if isinstance(r, dict)]
+                elif isinstance(data, dict):
+                    for key in ["inventory", "records", "data", "items"]:
+                        if key in data and isinstance(data[key], list):
+                            return [r for r in data[key] if isinstance(r, dict)]
+        except Exception as e:
+            print(f"Error reading inventory json: {e}")
+
     return []

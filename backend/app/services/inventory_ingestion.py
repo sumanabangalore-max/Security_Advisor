@@ -8,7 +8,12 @@ def ingest_inventory_records(db: Session, records: list[dict]):
         incoming_keys = set()
         incoming_dict = {}
         
+        if not isinstance(records, list):
+            records = []
+            
         for r in records:
+            if not isinstance(r, dict):
+                continue
             name = str(r.get("software_name", "")).strip()
             version = str(r.get("version", "1.0.0")).strip()
             env = str(r.get("environment", "Production")).strip()
