@@ -3,9 +3,13 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Install system dependencies needed for compiling certain libraries
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
+RUN apt-get update -o Acquire::Retries=3 \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        gcc \
+        g++ \
+        libpq-dev \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
