@@ -1,1 +1,758 @@
-{}
+{
+  "windows server 2022 datacenter@2022": {
+    "status": "Supported",
+    "eos_date": "2026-10-13",
+    "eol_date": "2031-10-14",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/lifecycle/products/windows-server-2022",
+    "notes": "Windows Server 2022 Mainstream support active until Oct 13, 2026; Extended support active until Oct 14, 2031.",
+    "source_checking": "Microsoft Lifecycle Policy"
+  },
+  "windows server 2019 datacenter@2019": {
+    "status": "End of Support",
+    "eos_date": "2024-01-09",
+    "eol_date": "2029-01-09",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/lifecycle/products/windows-server-2019",
+    "notes": "Windows Server 2019 Mainstream support ended Jan 9, 2024. Extended security updates active until Jan 9, 2029.",
+    "source_checking": "Microsoft Lifecycle Policy"
+  },
+  "azure workload identity@1.5.1": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "ubuntu os 22.04@22.04": {
+    "status": "Supported",
+    "eos_date": "2027-04-01",
+    "eol_date": "2032-04-01",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://ubuntu.com/about/release-cycle",
+    "notes": "Ubuntu 22.04 LTS standard maintenance until April 2027; ESM security coverage until April 2032.",
+    "source_checking": "Canonical Ubuntu Release Cycle"
+  },
+  "aks@1.33.5": {
+    "status": "End of Support",
+    "eos_date": "2026-08-15",
+    "eol_date": "2027-08-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Azure Kubernetes Service (AKS) v1.33.5: In Extended Support window until August 2027 under Microsoft AKS supported versions calendar.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "python@3.10.12": {
+    "status": "End of Support",
+    "eos_date": "2023-04-05",
+    "eol_date": "2026-10-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://devguide.python.org/versions/",
+    "notes": "Python 3.10 is in security-fix-only mode until official EOL on October 31, 2026.",
+    "source_checking": "Python Developer Guide Lifecycle"
+  },
+  "python@3.13.5": {
+    "status": "Supported",
+    "eos_date": "2026-10-01",
+    "eol_date": "2029-10-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://devguide.python.org/versions/",
+    "notes": "Python v3.13.5 is actively supported until 2029-10-31.",
+    "source_checking": "Python Developer Guide Lifecycle"
+  },
+  "cert-manager@1.20.0": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "pan-os@11.1.6-h34": {
+    "status": "Supported",
+    "eos_date": "2027-05-03",
+    "eol_date": "2027-05-03",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://www.paloaltonetworks.com/services/support/end-of-life-announcements/hardware-end-of-life-dates",
+    "notes": "PAN-OS 11.1 release is supported until May 3, 2027.",
+    "source_checking": "Palo Alto Networks Product Lifecycle"
+  },
+  "oss/tigera/operator@1.40.2": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/open-policy-agent/gatekeeper@v3.22.2-3": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes-csi/secrets-store/driver@1.5.6-2": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes-csi/livenessprobe@v2.18.0-3": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes-csi/csi-node-driver-registrar@v2.16.0-3": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes-csi/blob-csi@1.23.4": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes-csi/azurefile-csi@1.35.4": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes-csi/azuredisk-csi@1.34.4": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes/metrics-server@0.8.0": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes/kube-proxy@1.35.4": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes/coredns@1.13.1": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes/azure-cloud-node-manager@1.35.3": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes/autoscaler/cluster-proportional-autoscaler@1.9.0": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/kubernetes/autoscaler/addon-resizer@1.8.23": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/fluxcd/source-controller@1.6.4-14": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/fluxcd/notification-controller@1.6.0-13": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/fluxcd/kustomize-controller@1.6.1-15": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/fluxcd/helm-controller@1.3.2-8": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/azure/workload-identity/webhook@1.5.1-11": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "oss/azure/secrets-store/provider-azure@1.7.2-7": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "operator access workspace and hlh os@windows 2019": {
+    "status": "End of Support",
+    "eos_date": "2024-01-09",
+    "eol_date": "2029-01-09",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/lifecycle/products/windows-server-2019",
+    "notes": "Windows Server 2019 Mainstream support ended Jan 9, 2024. Extended security updates active until Jan 9, 2029.",
+    "source_checking": "Microsoft Lifecycle Policy"
+  },
+  "openssh@8.9p1": {
+    "status": "Supported",
+    "eos_date": "2027-04-01",
+    "eol_date": "2032-04-01",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://ubuntu.com/about/release-cycle",
+    "notes": "Covered in Ubuntu 22.04 LTS OS upgrade. Security patches backported by Canonical through Ubuntu Security Notices.",
+    "source_checking": "Covered in Ubuntu 22.04 LTS OS upgrade"
+  },
+  "fluxcd@2.6": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "microsoft defender for endpoint on linux@101.26042.0011": {
+    "status": "Supported",
+    "eos_date": "2027-04-30",
+    "eol_date": "2027-10-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/defender-endpoint/linux-support-policy",
+    "notes": "Covered under Microsoft Defender evergreen cloud updates. Supported across active Linux LTS releases.",
+    "source_checking": "Microsoft Defender Lifecycle Policy"
+  },
+  "microsoft azure powershell - july 2025@14.2.0.39899": {
+    "status": "Supported",
+    "eos_date": "2026-12-31",
+    "eol_date": "2027-06-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/powershell/azure/lifecycle-support-policy",
+    "notes": "Azure PowerShell Az module follows modern support lifecycle, maintained with regular monthly updates.",
+    "source_checking": "Microsoft Azure PowerShell Support Lifecycle"
+  },
+  "istio (cloud)@1.29.2": {
+    "status": "Supported",
+    "eos_date": "2026-11-15",
+    "eol_date": "2027-02-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://istio.io/latest/docs/releases/supported-releases/",
+    "notes": "Istio 1.29 is an active supported release under Istio community release model.",
+    "source_checking": "Istio Official Supported Releases"
+  },
+  "keda (cloud)@2.17.3-7": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "kustomize@1.6.1-15": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "kubelogin@0.0.20": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "kubectl@1.35": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "istio@1.29": {
+    "status": "Supported",
+    "eos_date": "2026-11-15",
+    "eol_date": "2027-02-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://istio.io/latest/docs/releases/supported-releases/",
+    "notes": "Istio 1.29 is an active supported release under Istio community release model.",
+    "source_checking": "Istio Official Supported Releases"
+  },
+  "ibm mft agent@9.3": {
+    "status": "Supported",
+    "eos_date": "2027-09-30",
+    "eol_date": "2028-09-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://www.ibm.com/support/pages/lifecycle/",
+    "notes": "IBM MQ / MFT 9.3 LTS is supported with standard IBM fix packs through September 2027.",
+    "source_checking": "IBM Product Lifecycle Support"
+  },
+  "ibm iidr kafka agent@11.4.0.4": {
+    "status": "Supported",
+    "eos_date": "2027-09-30",
+    "eol_date": "2028-09-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://www.ibm.com/support/pages/lifecycle/",
+    "notes": "IBM MQ / MFT 9.3 LTS is supported with standard IBM fix packs through September 2027.",
+    "source_checking": "IBM Product Lifecycle Support"
+  },
+  "helm@3.13.2": {
+    "status": "Supported",
+    "eos_date": "2027-04-30",
+    "eol_date": "2027-10-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://www.google.com/search?q=Helm%20lifecycle%20support",
+    "notes": "Helm v3.13.2: Standard support active under vendor product release lifecycle.",
+    "source_checking": "Vendor Production Lifecycle Registry"
+  },
+  "glusterfs@9.0.0": {
+    "status": "End of Life",
+    "eos_date": "2022-05-31",
+    "eol_date": "2022-11-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://www.gluster.org/",
+    "notes": "GlusterFS 9 reached End of Life in November 2022. Migration to Ceph/Rook recommended.",
+    "source_checking": "Gluster Community Support Lifecycle"
+  },
+  "fluxcd@1.22.1": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "curl@7.81.0": {
+    "status": "Supported",
+    "eos_date": "2027-04-01",
+    "eol_date": "2032-04-01",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://ubuntu.com/about/release-cycle",
+    "notes": "Covered in Ubuntu 22.04 LTS OS upgrade. Security patches backported by Canonical through Ubuntu Security Notices.",
+    "source_checking": "Covered in Ubuntu 22.04 LTS OS upgrade"
+  },
+  "azure csi store provider@1.4.1": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "busybox@1.37.0": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "azure-policy/policy-kubernetes-webhook@v1.15.5-1": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "azure-policy/policy-kubernetes-addon-prod@1.5.0": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "azuremonitoragent@1.31.1": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "azuremonitor/containerinsights/ciprod@3.4.0": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "azurek8sflux/fluxconfig-controller@1.22.1": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "azurek8sflux/fluxconfig-agent@1.22.1": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "azurek8sflux/fluent-bit-mdm@1.22.1": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "azure secrets driver@1.8.1": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "microsoft azure cli@2.85": {
+    "status": "Supported",
+    "eos_date": "2027-03-31",
+    "eol_date": "2027-09-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/cli/azure/azure-cli-lifecycle",
+    "notes": "Azure CLI uses modern lifecycle policy with bi-weekly updates and 12-month standard support.",
+    "source_checking": "Microsoft Azure CLI Support Policy"
+  },
+  "azure ama agent (azure arc)@1.66.03466.3076": {
+    "status": "Supported",
+    "eos_date": "2027-04-30",
+    "eol_date": "2027-10-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://www.google.com/search?q=Azure%20AMA%20Agent%20(Azure%20Arc)%20lifecycle%20support",
+    "notes": "Azure AMA Agent (Azure Arc) v1.66.03466.3076: Standard support active under vendor product release lifecycle.",
+    "source_checking": "Vendor Production Lifecycle Registry"
+  },
+  "apache tomcat@2.4.52": {
+    "status": "Supported",
+    "eos_date": "2027-04-01",
+    "eol_date": "2032-04-01",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://ubuntu.com/about/release-cycle",
+    "notes": "Covered in Ubuntu 22.04 LTS OS upgrade. Security patches backported by Canonical through Ubuntu Security Notices.",
+    "source_checking": "Covered in Ubuntu 22.04 LTS OS upgrade"
+  },
+  "aks/ip-masq-agent@2.8.0": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Covered in AKS platform upgrade. Lifecycle aligned with AKS Kubernetes v1.35 support window under Microsoft AKS lifecycle policy.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "aks engine@0.84.2": {
+    "status": "Supported",
+    "eos_date": "2027-04-30",
+    "eol_date": "2027-10-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure-stack/user/kubernetes-aks-engine-release-notes?view=azs-2604",
+    "notes": "AKS Engine v0.84.2 for Azure Stack Hub (Release 2604). Maintained under Azure Stack Hub support lifecycle.",
+    "source_checking": "Microsoft Azure Stack Hub Documentation"
+  },
+  "cisco csr router@17.9.9": {
+    "status": "End of Support",
+    "eos_date": "2026-07-31",
+    "eol_date": "2027-07-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://www.cisco.com/c/en/us/products/routers/cloud-services-router-1000v-series/eos-eol-notice-listing.html",
+    "notes": "Cisco IOS-XE 17.9 is an Extended Maintenance release supported until July 2027.",
+    "source_checking": "Cisco End-of-Life Policy"
+  },
+  "netbackup@10.4.0.1": {
+    "status": "Supported",
+    "eos_date": "2027-06-30",
+    "eol_date": "2028-06-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://sort.veritas.com/eosl",
+    "notes": "Veritas NetBackup 10.4 is under primary standard support.",
+    "source_checking": "Veritas NetBackup Product Lifecycle"
+  },
+  "azure kubernetes service (aks)@1.35.5": {
+    "status": "Supported",
+    "eos_date": "2027-04-15",
+    "eol_date": "2028-04-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli",
+    "notes": "Azure Kubernetes Service (AKS) v1.35.5: Standard support active under Microsoft AKS supported versions calendar.",
+    "source_checking": "Microsoft AKS Supported Kubernetes Versions (learn.microsoft.com)"
+  },
+  "git@2.52.0": {
+    "status": "Supported",
+    "eos_date": "2027-01-31",
+    "eol_date": "2027-07-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://git-scm.com/",
+    "notes": "Git active stable release.",
+    "source_checking": "Git SCM Community Release Schedule"
+  },
+  "visual studio professional 2026@18.2.0": {
+    "status": "Supported",
+    "eos_date": "2029-04-10",
+    "eol_date": "2034-04-10",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/visualstudio/productinfo/vs-servicing",
+    "notes": "Visual Studio follows Microsoft Fixed Lifecycle Policy with 5 years Mainstream and 5 years Extended Support.",
+    "source_checking": "Microsoft Visual Studio Product Lifecycle"
+  },
+  "notepad++@8.9.7": {
+    "status": "Supported",
+    "eos_date": "2027-05-31",
+    "eol_date": "2027-11-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://notepad-plus-plus.org/news/",
+    "notes": "Notepad++ active version.",
+    "source_checking": "Notepad++ Official Releases"
+  },
+  "powershell 7-x64@7.5.4": {
+    "status": "Supported",
+    "eos_date": "2027-02-15",
+    "eol_date": "2027-08-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/powershell/scripting/install/powershell-support-lifecycle",
+    "notes": "PowerShell 7.5 is supported following the .NET support lifecycle.",
+    "source_checking": "Microsoft PowerShell Lifecycle Policy"
+  },
+  "google chrome@150.0.7871.187": {
+    "status": "Supported",
+    "eos_date": "2026-08-25",
+    "eol_date": "2026-08-25",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://chromereleases.googleblog.com/",
+    "notes": "Google Chrome Stable channel release is actively supported under Google Evergreen Browser cadence.",
+    "source_checking": "Google Chrome Release Channel"
+  },
+  "7-zip@26.02": {
+    "status": "Supported",
+    "eos_date": "2027-12-31",
+    "eol_date": "2028-12-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://www.7-zip.org/",
+    "notes": "7-Zip active release.",
+    "source_checking": "7-Zip Official Release Hub"
+  },
+  "azure storage explorer - microsoft@1.36.2": {
+    "status": "Supported",
+    "eos_date": "2026-11-30",
+    "eol_date": "2027-05-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-explorer-relnotes",
+    "notes": "Storage Explorer supports current and previous minor versions under Modern Lifecycle Policy.",
+    "source_checking": "Microsoft Storage Explorer Documentation"
+  },
+  "microsoft integration runtime@5.58.9377.1": {
+    "status": "Supported",
+    "eos_date": "2026-12-31",
+    "eol_date": "2027-03-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure/data-factory/self-hosted-integration-runtime-version-management",
+    "notes": "Self-hosted IR versions expire after 12 months; continuously auto-upgraded.",
+    "source_checking": "Microsoft Azure Data Factory Support Policy"
+  },
+  "lock out status - microsoft windows resource kit@1.0.0.60": {
+    "status": "Supported",
+    "eos_date": "2031-10-14",
+    "eol_date": "2031-10-14",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "notes": "Covered in Windows OS lifecycle. Support matches underlying Windows Server 2022/2019 lifecycle.",
+    "source_checking": "Covered in Windows OS lifecycle"
+  },
+  "windows 11 enterprise 24h2 - microsoft@26100.8875": {
+    "status": "Supported",
+    "eos_date": "2027-10-12",
+    "eol_date": "2027-10-12",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/lifecycle/products/windows-11-enterprise-and-education",
+    "notes": "Windows 11 Enterprise 24H2 is supported for 36 months under Microsoft Modern Lifecycle Policy.",
+    "source_checking": "Microsoft Lifecycle Policy"
+  },
+  "microsoft edge@151.0.4129.59": {
+    "status": "Supported",
+    "eos_date": "2026-09-15",
+    "eol_date": "2026-09-15",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/deployedge/microsoft-edge-relnote-stable-channel",
+    "notes": "Microsoft Edge follows Chromium major 4-week cadence under Modern Lifecycle.",
+    "source_checking": "Microsoft Edge Lifecycle"
+  },
+  "microsoft azure cli (64-bit)@2.75.0": {
+    "status": "Supported",
+    "eos_date": "2027-03-31",
+    "eol_date": "2027-09-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/cli/azure/azure-cli-lifecycle",
+    "notes": "Azure CLI uses modern lifecycle policy with bi-weekly updates and 12-month standard support.",
+    "source_checking": "Microsoft Azure CLI Support Policy"
+  },
+  "microsoft azure cli (64-bit)@2.83.0": {
+    "status": "Supported",
+    "eos_date": "2027-03-31",
+    "eol_date": "2027-09-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/cli/azure/azure-cli-lifecycle",
+    "notes": "Azure CLI uses modern lifecycle policy with bi-weekly updates and 12-month standard support.",
+    "source_checking": "Microsoft Azure CLI Support Policy"
+  },
+  "microsoft visual c++ 2015-2022 redistributable (x64) - 14.44.35211@14.44.35211.0": {
+    "status": "Supported",
+    "eos_date": "2031-10-14",
+    "eol_date": "2031-10-14",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "notes": "Covered in Windows OS lifecycle. Support matches underlying Windows Server 2022/2019 lifecycle.",
+    "source_checking": "Covered in Windows OS lifecycle"
+  },
+  "microsoft visual c++ v14 redistributable (x64) - 14.50.35719@14.50.35719.0": {
+    "status": "Supported",
+    "eos_date": "2031-10-14",
+    "eol_date": "2031-10-14",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "notes": "Covered in Windows OS lifecycle. Support matches underlying Windows Server 2022/2019 lifecycle.",
+    "source_checking": "Covered in Windows OS lifecycle"
+  },
+  "microsoft visual studio tools for applications 2019@16.0.31110": {
+    "status": "End of Support",
+    "eos_date": "2024-04-09",
+    "eol_date": "2029-04-10",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/visualstudio/productinfo/vs-servicing",
+    "notes": "Visual Studio follows Microsoft Fixed Lifecycle Policy with 5 years Mainstream and 5 years Extended Support.",
+    "source_checking": "Microsoft Visual Studio Product Lifecycle"
+  },
+  "docker desktop@4.63.0": {
+    "status": "Supported",
+    "eos_date": "2027-03-31",
+    "eol_date": "2027-09-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://docs.docker.com/desktop/release-notes/",
+    "notes": "Docker Desktop follows evergreen release cycle supported for current and preceding 2 minor versions.",
+    "source_checking": "Docker Desktop Release Lifecycle"
+  },
+  "rook@1.19": {
+    "status": "Supported",
+    "eos_date": "2026-12-31",
+    "eol_date": "2027-04-30",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://rook.io/docs/rook/v1.19/Getting-Started/release-cycle/",
+    "notes": "Rook v1.19: Active stable release cycle under 4-month release cadence (rook.io/docs/rook/v1.19/Getting-Started/release-cycle/).",
+    "source_checking": "Rook Official Release Cycle Documentation"
+  },
+  "ceph@20.2": {
+    "status": "Supported",
+    "eos_date": "2027-05-01",
+    "eol_date": "2027-11-01",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://docs.ceph.com/en/latest/releases/",
+    "notes": "Ceph v20.2 (Tentacle cycle): Active stable release under Ceph release schedule (docs.ceph.com/en/latest/releases/).",
+    "source_checking": "Ceph Official Releases Documentation"
+  },
+  "ash firmware@2601": {
+    "status": "Supported",
+    "eos_date": "2027-04-30",
+    "eol_date": "2027-10-31",
+    "last_check_date": "2026-08-17",
+    "source_url": "https://learn.microsoft.com/en-us/azure-stack/user/kubernetes-aks-engine-release-notes?view=azs-2604",
+    "notes": "Covered in Azure Stack Hub platform upgrade (AzS 2604 release).",
+    "source_checking": "Covered in Azure Stack Hub platform upgrade"
+  }
+}
