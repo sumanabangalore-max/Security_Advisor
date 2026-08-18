@@ -95,10 +95,25 @@ export interface Vulnerability {
   hostname?: string;
   ip_address?: string;
   owner?: string;
+  criticality?: string;
+  // CISA KEV (Known Exploited Vulnerabilities) Integration
+  cisa_kev?: boolean;
+  cisa_kev_flag?: boolean;
+  cisa_kev_date_added?: string;
+  cisa_kev_due_date?: string;
+  cisa_kev_action?: string;
+  cisa_kev_ransomware?: string;
+  cisa_kev_notes?: string;
+  // FIRST.org EPSS (Exploit Prediction Scoring System) Integration
+  epss_score?: number;
+  epss_percentile?: number;
+  epss_date?: string;
 }
 
 export interface CveSourcesConfig {
   nvd_enabled: boolean;
+  cisa_kev_enabled: boolean;
+  epss_enabled: boolean;
   microsoft_enabled: boolean;
   ubuntu_enabled: boolean;
   cisco_enabled: boolean;

@@ -1,3 +1,9 @@
 {
-  "nvd_enabled": true
+  "nvd_enabled": true,
+  "cisa_kev_enabled": true,
+  "epss_enabled": true,
+  "microsoft_enabled": true,
+  "ubuntu_enabled": true,
+  "cisco_enabled": true,
+  "aruba_enabled": true
 }

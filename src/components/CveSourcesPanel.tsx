@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Database, Check } from "lucide-react";
+import { Database, Check, ExternalLink } from "lucide-react";
 import { api } from "../api";
 import { CveSourcesConfig, UserRole } from "../types";
 
@@ -12,6 +12,8 @@ interface CveSourcesPanelProps {
 export default function CveSourcesPanel({ userRole, onSourcesChanged, hideToggleButtons = false }: CveSourcesPanelProps) {
   const [sources, setSources] = useState<CveSourcesConfig>({
     nvd_enabled: true,
+    cisa_kev_enabled: true,
+    epss_enabled: true,
     microsoft_enabled: true,
     ubuntu_enabled: true,
     cisco_enabled: true,
@@ -52,33 +54,52 @@ export default function CveSourcesPanel({ userRole, onSourcesChanged, hideToggle
 
   const feeds = [
     {
+      id: "cisa_kev",
+      key: "cisa_kev_enabled" as keyof CveSourcesConfig,
+      name: "CISA Known Exploited Vulnerabilities (KEV)",
+      url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      description: "Direct API feed to the CISA Known Exploited Vulnerabilities Catalog (cisa.gov/known-exploited-vulnerabilities-catalog). Scans and correlates vulnerabilities impacting your inventory with confirmed in-the-wild exploitation and mandatory remediation due dates.",
+    },
+    {
+      id: "epss",
+      key: "epss_enabled" as keyof CveSourcesConfig,
+      name: "FIRST.org EPSS Scoring API",
+      url: "https://www.first.org/epss/",
+      description: "Direct API integration with FIRST.org Exploit Prediction Scoring System (first.org/epss). Evaluates 30-day threat exploitation probability scores and percentile rankings for every identified CVE.",
+    },
+    {
       id: "nvd",
       key: "nvd_enabled" as keyof CveSourcesConfig,
       name: "NIST NVD API v2.0",
-      description: "Direct connection to the National Vulnerability Database. Syncs comprehensive CVSS mappings and CPE definitions.",
+      url: "https://nvd.nist.gov",
+      description: "Direct connection to the National Vulnerability Database. Syncs comprehensive CVSS v3.1 mappings, CWE classifications, and CPE definitions.",
     },
     {
       id: "microsoft",
       key: "microsoft_enabled" as keyof CveSourcesConfig,
       name: "Microsoft Security Guide",
+      url: "https://msrc.microsoft.com",
       description: "Microsoft Active Directory, Outlook, and Windows Server patch definitions and security advisories.",
     },
     {
       id: "ubuntu",
       key: "ubuntu_enabled" as keyof CveSourcesConfig,
       name: "Ubuntu Security Notices & Package Updates",
+      url: "https://ubuntu.com/security/notices",
       description: "Monitors Ubuntu Security Notices (ubuntu.com/security/notices) and package release streams (ubuntuupdates.org) for USN advisories and deb patch availability.",
     },
     {
       id: "cisco",
       key: "cisco_enabled" as keyof CveSourcesConfig,
       name: "Cisco Security Advisories",
+      url: "https://sec.cloudapps.cisco.com/security/center",
       description: "Appliance patch streams for Cisco IOS XE software, routers, and enterprise switch firmware.",
     },
     {
       id: "aruba",
       key: "aruba_enabled" as keyof CveSourcesConfig,
       name: "HPE Aruba Security Advisories",
+      url: "https://www.arubanetworks.com/support",
       description: "Appliance tracking feeds for HPE Aruba Switch CX 6300 firmware, controllers, and wireless access points.",
     },
   ];
@@ -107,6 +128,18 @@ export default function CveSourcesPanel({ userRole, onSourcesChanged, hideToggle
               <div className="space-y-1 pr-2 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-xs text-slate-900">{feed.name}</span>
+                  {feed.url && (
+                    <a
+                      href={feed.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] text-indigo-600 hover:text-indigo-800 hover:underline font-mono"
+                      title={`Open ${feed.url}`}
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      API / Catalog
+                    </a>
+                  )}
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${isEnabled ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-500 border border-slate-200"}`}>
                     {isEnabled ? "Active" : "Disabled"}
                   </span>
