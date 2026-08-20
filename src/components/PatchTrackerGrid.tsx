@@ -115,12 +115,14 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
     const headers = [
       "Software",
       "Installed Version",
+      "Installed Version Release Date",
       "Same-Version Latest Patch",
+      "Same-Version Patch Release Date",
       "Same-Version Status",
       "Market Latest Version",
+      "Market Latest Release Date",
       "Upgrade Strategy",
-      "Release Date",
-      "Severity",
+      "Patch Severity",
       "Hostname",
       "Environment",
       "Owner",
@@ -131,11 +133,13 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
     const rows = patches.map(p => [
       `"${p.software_name}"`,
       `"${p.installed_version}"`,
+      `"${p.installed_version_release_date || "N/A"}"`,
       `"${p.latest_same_version_patch || p.latest_patch_version}"`,
+      `"${p.same_version_patch_release_date || p.patch_release_date || "N/A"}"`,
       `"${p.same_version_patch_status || (p.is_up_to_date ? "Up to Date" : "Patch Available")}"`,
       `"${p.latest_market_version || p.latest_patch_version}"`,
+      `"${p.market_version_release_date || p.patch_release_date || "N/A"}"`,
       `"${p.upgrade_roadmap?.upgrade_strategy || "In-Place Cumulative Rollup"}"`,
-      `"${p.patch_release_date}"`,
       `"${p.patch_severity}"`,
       `"${p.hostname}"`,
       `"${p.environment}"`,
@@ -427,8 +431,8 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                   <th className="py-3 px-4">Installed Version</th>
                   <th className="py-3 px-4">Same-Version Latest Patch</th>
                   <th className="py-3 px-4">Market Latest Version</th>
+                  <th className="py-3 px-4">Release Dates (3-Point Timeline)</th>
                   <th className="py-3 px-4">Upgrade Roadmap</th>
-                  <th className="py-3 px-4">Release Date</th>
                   <th className="py-3 px-4">Patch Severity</th>
                   <th className="py-3 px-4">Source of Truth</th>
                   <th className="py-3 px-4 text-right">Actions</th>
@@ -439,6 +443,9 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                   const sameVerTarget = patch.latest_same_version_patch || patch.latest_patch_version;
                   const marketTarget = patch.latest_market_version || patch.latest_patch_version;
                   const isSameVerUpToDate = patch.same_version_patch_status === "Up to Date" || patch.is_up_to_date;
+                  const instRelDate = patch.installed_version_release_date || "2024-05-15";
+                  const patchRelDate = patch.same_version_patch_release_date || patch.patch_release_date || "2026-08-11";
+                  const marketRelDate = patch.market_version_release_date || patch.patch_release_date || "2026-08-11";
 
                   return (
                     <tr key={patch.id} className="hover:bg-slate-50/80 transition group">
@@ -463,10 +470,16 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                       </td>
 
                       {/* Installed Version */}
-                      <td className="py-3.5 px-4 font-mono text-xs font-semibold text-slate-800">
-                        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
-                          v{patch.installed_version}
-                        </span>
+                      <td className="py-3.5 px-4 font-mono text-xs">
+                        <div className="space-y-1">
+                          <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200 font-semibold inline-block">
+                            v{patch.installed_version}
+                          </span>
+                          <div className="text-[10px] text-slate-500 flex items-center gap-1 font-sans">
+                            <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>Rel: {instRelDate}</span>
+                          </div>
+                        </div>
                       </td>
 
                       {/* Same-Version Latest Patch */}
@@ -475,7 +488,7 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                           <div className="font-bold text-slate-900">
                             {sameVerTarget.startsWith("v") ? sameVerTarget : `v${sameVerTarget}`}
                           </div>
-                          <div>
+                          <div className="flex items-center gap-1">
                             {isSameVerUpToDate ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-1.5 py-0.2 rounded">
                                 <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -488,6 +501,10 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                               </span>
                             )}
                           </div>
+                          <div className="text-[10px] text-amber-800 flex items-center gap-1 font-sans">
+                            <Calendar className="w-3 h-3 text-amber-600 shrink-0" />
+                            <span>Rel: {patchRelDate}</span>
+                          </div>
                         </div>
                       </td>
 
@@ -497,12 +514,27 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                           <span className="text-indigo-800 font-extrabold bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded inline-block">
                             {marketTarget.startsWith("v") || marketTarget.includes(" ") ? marketTarget : `v${marketTarget}`}
                           </span>
-                          <div className="text-[10px] text-slate-500 font-sans">
-                            {patch.installed_version === marketTarget || sameVerTarget === marketTarget ? (
-                              <span className="text-emerald-600 font-semibold">Current Market Lead</span>
-                            ) : (
-                              <span className="text-indigo-600 font-medium">Newer Major Branch</span>
-                            )}
+                          <div className="text-[10px] text-indigo-700 flex items-center gap-1 font-sans">
+                            <Calendar className="w-3 h-3 text-indigo-600 shrink-0" />
+                            <span>Rel: {marketRelDate}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Release Dates (3-Point Timeline Column) */}
+                      <td className="py-3.5 px-4 text-xs font-mono">
+                        <div className="p-2 bg-slate-50/90 border border-slate-200 rounded-lg space-y-1 text-[11px]">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-slate-500 font-sans text-[10px]">Installed:</span>
+                            <span className="font-semibold text-slate-800">{instRelDate}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-amber-700 font-sans text-[10px]">Patch:</span>
+                            <span className="font-semibold text-amber-900">{patchRelDate}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-indigo-600 font-sans text-[10px]">Market:</span>
+                            <span className="font-semibold text-indigo-800">{marketRelDate}</span>
                           </div>
                         </div>
                       </td>
@@ -522,14 +554,6 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                             {patch.upgrade_roadmap?.steps?.[0] || "Step-by-step path"}
                           </div>
                         </button>
-                      </td>
-
-                      {/* Release Date */}
-                      <td className="py-3.5 px-4 text-xs font-mono">
-                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100/90 text-slate-800 font-semibold border border-slate-200">
-                          <Calendar className="w-3 h-3 text-indigo-600 shrink-0" />
-                          <span>{patch.patch_release_date}</span>
-                        </div>
                       </td>
 
                       {/* Patch Severity */}
@@ -622,7 +646,11 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                 <div className="text-base font-mono font-bold text-slate-900 mt-1">
                   v{selectedRoadmap.installed_version}
                 </div>
-                <span className="inline-block mt-1 text-[10px] bg-slate-200 text-slate-700 px-2 py-0.2 rounded font-semibold">
+                <div className="mt-1 text-[11px] text-slate-600 font-mono flex items-center justify-center gap-1">
+                  <Calendar className="w-3 h-3 text-slate-400" />
+                  <span>Rel: {selectedRoadmap.installed_version_release_date || "2024-05-15"}</span>
+                </div>
+                <span className="inline-block mt-1.5 text-[10px] bg-slate-200 text-slate-700 px-2 py-0.2 rounded font-semibold">
                   Active Asset Level
                 </span>
               </div>
@@ -632,7 +660,11 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                 <div className="text-base font-mono font-bold text-amber-900 mt-1">
                   {selectedRoadmap.latest_same_version_patch || selectedRoadmap.latest_patch_version}
                 </div>
-                <span className="inline-block mt-1 text-[10px] bg-amber-100 text-amber-800 px-2 py-0.2 rounded font-bold border border-amber-200">
+                <div className="mt-1 text-[11px] text-amber-800 font-mono flex items-center justify-center gap-1">
+                  <Calendar className="w-3 h-3 text-amber-600" />
+                  <span>Rel: {selectedRoadmap.same_version_patch_release_date || selectedRoadmap.patch_release_date || "2026-08-11"}</span>
+                </div>
+                <span className="inline-block mt-1.5 text-[10px] bg-amber-100 text-amber-800 px-2 py-0.2 rounded font-bold border border-amber-200">
                   {selectedRoadmap.same_version_patch_status || "Branch Maintenance"}
                 </span>
               </div>
@@ -642,7 +674,11 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                 <div className="text-base font-mono font-bold text-indigo-900 mt-1">
                   {selectedRoadmap.latest_market_version || selectedRoadmap.latest_patch_version}
                 </div>
-                <span className="inline-block mt-1 text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.2 rounded font-bold border border-indigo-200">
+                <div className="mt-1 text-[11px] text-indigo-700 font-mono flex items-center justify-center gap-1">
+                  <Calendar className="w-3 h-3 text-indigo-600" />
+                  <span>Rel: {selectedRoadmap.market_version_release_date || selectedRoadmap.patch_release_date || "2026-08-11"}</span>
+                </div>
+                <span className="inline-block mt-1.5 text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.2 rounded font-bold border border-indigo-200">
                   Vendor Market Lead
                 </span>
               </div>
@@ -760,17 +796,29 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
               <div>
                 <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Installed Version</span>
                 <div className="text-base font-mono font-bold text-slate-800 mt-0.5">v{selectedPatch.installed_version}</div>
+                <div className="mt-1 text-[11px] text-slate-600 font-mono flex items-center justify-center gap-1">
+                  <Calendar className="w-3 h-3 text-slate-400" />
+                  <span>Rel: {selectedPatch.installed_version_release_date || "2024-05-15"}</span>
+                </div>
               </div>
               <div>
                 <span className="text-xs text-amber-700 uppercase font-bold tracking-wider">Same-Version Patch</span>
                 <div className="text-base font-mono font-bold text-amber-900 mt-0.5">
                   {selectedPatch.latest_same_version_patch || selectedPatch.latest_patch_version}
                 </div>
+                <div className="mt-1 text-[11px] text-amber-800 font-mono flex items-center justify-center gap-1">
+                  <Calendar className="w-3 h-3 text-amber-600" />
+                  <span>Rel: {selectedPatch.same_version_patch_release_date || selectedPatch.patch_release_date || "2026-08-11"}</span>
+                </div>
               </div>
               <div>
                 <span className="text-xs text-indigo-600 uppercase font-bold tracking-wider">Market Latest Target</span>
                 <div className="text-base font-mono font-bold text-indigo-700 mt-0.5">
                   {selectedPatch.latest_market_version || selectedPatch.latest_patch_version}
+                </div>
+                <div className="mt-1 text-[11px] text-indigo-700 font-mono flex items-center justify-center gap-1">
+                  <Calendar className="w-3 h-3 text-indigo-600" />
+                  <span>Rel: {selectedPatch.market_version_release_date || selectedPatch.patch_release_date || "2026-08-11"}</span>
                 </div>
               </div>
             </div>

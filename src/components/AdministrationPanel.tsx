@@ -3,7 +3,7 @@ import {
   Building2, ShieldCheck, Wrench, RotateCcw, CheckCircle2, 
   AlertTriangle, RefreshCw, ArrowUpCircle, Terminal, 
   Search, ShieldAlert, Check, History, Lock, FileCode, CheckCircle,
-  Users, Cloud, Settings, Layers, Database, Zap, Key
+  Users, Cloud, Settings, Layers, Database, Zap, Key, Activity
 } from "lucide-react";
 import { api } from "../api";
 import { AdminUpgradeState, AdminComponent } from "../types";
@@ -15,9 +15,10 @@ import CveSourcesPanel from "./CveSourcesPanel";
 import AiAgentConfigPanel from "./AiAgentConfigPanel";
 import AiPlatformConfigPanel from "./AiPlatformConfigPanel";
 import DatabaseConfigPanel from "./DatabaseConfigPanel";
+import SelfTestShakedownPanel from "./SelfTestShakedownPanel";
 import { UserRole } from "../types";
 
-export type AdminSubTab = "users" | "ldap" | "siem" | "smtp" | "cve-sources" | "ai-platform" | "ai-agent" | "db-config" | "system-patching";
+export type AdminSubTab = "users" | "ldap" | "siem" | "smtp" | "cve-sources" | "ai-platform" | "ai-agent" | "db-config" | "system-patching" | "shakedown";
 
 interface AdministrationPanelProps {
   userRole: UserRole;
@@ -144,6 +145,7 @@ export default function AdministrationPanel({
     { id: "ai-platform", label: "AI Platform & API Keys", icon: Key, desc: "GovTech AI & Gemini keys" },
     { id: "ai-agent", label: "AIPatch Agent Config", icon: Zap, desc: "Jump host proxies & README" },
     { id: "system-patching", label: "System Patching", icon: ShieldCheck, desc: "Package upgrade & remediation" },
+    { id: "shakedown", label: "Self Test / Shakedown", icon: Activity, desc: "End-to-end subsystem verification" },
   ];
 
   const components = upgradeState?.components || [];
@@ -176,7 +178,7 @@ export default function AdministrationPanel({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-10 gap-2">
           {subNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentSubTab === item.id;
@@ -235,6 +237,10 @@ export default function AdministrationPanel({
 
       {currentSubTab === "ai-agent" && (
         <AiAgentConfigPanel userRole={userRole} />
+      )}
+
+      {currentSubTab === "shakedown" && (
+        <SelfTestShakedownPanel userRole={userRole} />
       )}
 
       {currentSubTab === "system-patching" && (

@@ -154,6 +154,9 @@ export interface PatchItem {
   latest_market_version: string;
   same_version_patch_status: "Up to Date" | "Patch Available" | "Branch Supported";
   patch_release_date: string;
+  installed_version_release_date?: string;
+  same_version_patch_release_date?: string;
+  market_version_release_date?: string;
   patch_severity: "Critical" | "High" | "Medium" | "Low" | "Up to Date";
   is_up_to_date: boolean;
   hostname: string;
@@ -168,6 +171,41 @@ export interface PatchItem {
   recommended_action: string;
   upgrade_roadmap?: UpgradeRoadmap;
   last_scanned_at: string;
+}
+
+export interface ShakedownAssertion {
+  check: string;
+  passed: boolean;
+  value?: string;
+  expected?: string;
+}
+
+export interface ShakedownTestCase {
+  id: string;
+  category: "Core APIs" | "Token & Auth" | "Vulnerabilities" | "Zero-Day Tracking" | "EOS / EOL Lifecycle" | "Patch Tracker" | "External Integrations" | "AI Engine";
+  name: string;
+  description: string;
+  status: "PASSED" | "WARNING" | "FAILED" | "PENDING";
+  duration_ms: number;
+  details: string;
+  assertions: ShakedownAssertion[];
+  timestamp: string;
+}
+
+export interface ShakedownSuiteResult {
+  suite_id: string;
+  execution_timestamp: string;
+  system_version: string;
+  environment: string;
+  total_tests: number;
+  passed_tests: number;
+  warning_tests: number;
+  failed_tests: number;
+  pass_rate_percent: number;
+  total_duration_ms: number;
+  status: "ALL_SYSTEMS_OPERATIONAL" | "WARNINGS_DETECTED" | "DEGRADED";
+  test_cases: ShakedownTestCase[];
+  audit_hash: string;
 }
 
 export interface PatchScheduleConfig {
