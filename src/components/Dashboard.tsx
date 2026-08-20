@@ -15,7 +15,6 @@ import PatchTrackerGrid from "./PatchTrackerGrid";
 import ConfigurationPanel from "./ConfigurationPanel";
 import ZeroDayAlertPanel from "./ZeroDayAlertPanel";
 import NotificationBell, { NotificationItem } from "./NotificationBell";
-import AiChatbotPanel from "./AiChatbotPanel";
 import TokenAnalyticsPanel from "./TokenAnalyticsPanel";
 import AdministrationPanel, { AdminSubTab } from "./AdministrationPanel";
 import ExecutiveOverviewDashboard from "./ExecutiveOverviewDashboard";
@@ -38,8 +37,7 @@ export type ActiveTabType =
   | "ldap-config" 
   | "external-logging" 
   | "eos-eol" 
-  | "patch-tracker"
-  | "chatbot" 
+  | "patch-tracker" 
   | "token-analytics" 
   | "config" 
   | "administration";
@@ -76,9 +74,9 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
 
   const isTabAllowedForRole = (tabId: string, role: UserRole): boolean => {
     if (role === "admin") return true;
-    if (role === "patch_manager") return ["patch-tracker", "inventory", "chatbot"].includes(tabId);
-    if (role === "eos_manager") return ["eos-eol", "inventory", "chatbot"].includes(tabId);
-    if (role === "vuln_manager") return ["vulnerabilities", "zero-day", "overview", "inventory", "chatbot"].includes(tabId);
+    if (role === "patch_manager") return ["patch-tracker", "inventory"].includes(tabId);
+    if (role === "eos_manager") return ["eos-eol", "inventory"].includes(tabId);
+    if (role === "vuln_manager") return ["vulnerabilities", "zero-day", "overview", "inventory"].includes(tabId);
     if (role === "analyst") return tabId !== "administration";
     if (role === "viewer") return ["overview", "vulnerabilities", "inventory", "eos-eol", "patch-tracker"].includes(tabId);
     return false;
@@ -253,14 +251,23 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
     }
   };
 
-  const navItems = [
+  interface NavItem {
+    id: string;
+    label: string;
+    icon: any;
+    badge?: number | string;
+    highlight?: string;
+    hasDropdown?: boolean;
+    subItems?: Array<{ id: string; label: string; icon: any }>;
+  }
+
+  const navItems: NavItem[] = [
     { id: "overview", label: "Executive Overview", icon: LayoutDashboard },
     { id: "vulnerabilities", label: "Vulnerabilities", icon: ShieldAlert },
     { id: "zero-day", label: "Zero-Day Radar", icon: Flame, badge: stats.zero_day_count || 1 },
     { id: "inventory", label: "Master Inventory", icon: Layers },
     { id: "eos-eol", label: "EOS/EOL Tracker", icon: Clock },
     { id: "patch-tracker", label: "Patch Tracker", icon: Package },
-    { id: "chatbot", label: "AI Security Chat", icon: MessageSquare, highlight: "AI" },
     { id: "token-analytics", label: "Token Analytics", icon: Coins },
     { 
       id: "administration", 
@@ -580,8 +587,6 @@ export default function Dashboard({ username, userRole, onLogout }: DashboardPro
               userRole={userRole}
               refreshTrigger={refreshTrigger}
             />
-          ) : activeTab === "chatbot" ? (
-            <AiChatbotPanel userRole={userRole} />
           ) : activeTab === "token-analytics" ? (
             <TokenAnalyticsPanel />
           ) : activeTab === "administration" ? (

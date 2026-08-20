@@ -6,6 +6,7 @@
     "hostname": "My Laptop",
     "ip_address": "10.0.1.10",
     "owner": "Self",
+    "pic_email": "suman.ailearn@gmail.com",
     "criticality": "Medium",
     "cpe_uri": "cpe:2.3:a:chrome:chrome:130.0.6723.58:*:*:*:*:*:*:*"
   },
@@ -16,6 +17,7 @@
     "hostname": "IRAS",
     "ip_address": "10.0.1.11",
     "owner": "Infrastructure Team",
+    "pic_email": "infra.pic@corp.internal",
     "criticality": "Medium",
     "cpe_uri": "cpe:2.3:a:chrome:chrome:131.0.6778.85:*:*:*:*:*:*:*"
   },
@@ -26,6 +28,7 @@
     "hostname": "srv-3.internal",
     "ip_address": "10.0.1.12",
     "owner": "Infrastructure Team",
+    "pic_email": "mesh.admin@corp.internal",
     "criticality": "Medium",
     "cpe_uri": "cpe:2.3:a:istio:istio:1.22.0:*:*:*:*:*:*:*"
   },
@@ -36,6 +39,7 @@
     "hostname": "srv-4.internal",
     "ip_address": "10.0.1.13",
     "owner": "Infrastructure Team",
+    "pic_email": "mesh.admin@corp.internal",
     "criticality": "Medium",
     "cpe_uri": "cpe:2.3:a:istio:istio:1.23.0:*:*:*:*:*:*:*"
   },
@@ -46,6 +50,7 @@
     "hostname": "mine",
     "ip_address": "10.140.1.2",
     "owner": "Suman",
+    "pic_email": "suman.ailearn@gmail.com",
     "criticality": "Medium",
     "cpe_uri": "cpe:2.3:a:cert-manager:cert-manager:1.15.0:*:*:*:*:*:*:*"
   },
@@ -56,6 +61,7 @@
     "hostname": "srv-6.internal",
     "ip_address": "10.0.1.15",
     "owner": "Infrastructure Team",
+    "pic_email": "secops.lead@corp.internal",
     "criticality": "Medium",
     "cpe_uri": "cpe:2.3:a:cert-manager:cert-manager:1.16.0:*:*:*:*:*:*:*"
   },
@@ -66,6 +72,7 @@
     "hostname": "srv-7.internal",
     "ip_address": "10.0.1.16",
     "owner": "Infrastructure Team",
+    "pic_email": "gitops.pic@corp.internal",
     "criticality": "Medium",
     "cpe_uri": "cpe:2.3:a:flux:flux:2.2.0:*:*:*:*:*:*:*"
   },
@@ -76,6 +83,7 @@
     "hostname": "srv-8.internal",
     "ip_address": "10.0.1.17",
     "owner": "Infrastructure Team",
+    "pic_email": "gitops.pic@corp.internal",
     "criticality": "Medium",
     "cpe_uri": "cpe:2.3:a:flux:flux:2.3.0:*:*:*:*:*:*:*"
   }

@@ -26,8 +26,9 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
   const [envFilter, setEnvFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
-  // Selected Detail Modal
+  // Selected Detail Modal & Roadmap Modal
   const [selectedPatch, setSelectedPatch] = useState<PatchItem | null>(null);
+  const [selectedRoadmap, setSelectedRoadmap] = useState<PatchItem | null>(null);
   const [copiedCmd, setCopiedCmd] = useState(false);
 
   // Schedule Modal State
@@ -111,24 +112,43 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
 
   const handleExportCSV = () => {
     if (patches.length === 0) return;
-    const headers = ["Software", "Installed Version", "Latest Patch", "Release Date", "Severity", "Hostname", "Environment", "Source URL", "Secondary Source URL", "Action"];
+    const headers = [
+      "Software",
+      "Installed Version",
+      "Same-Version Latest Patch",
+      "Same-Version Status",
+      "Market Latest Version",
+      "Upgrade Strategy",
+      "Release Date",
+      "Severity",
+      "Hostname",
+      "Environment",
+      "Owner",
+      "PIC Email",
+      "Source URL",
+      "Action"
+    ];
     const rows = patches.map(p => [
       `"${p.software_name}"`,
       `"${p.installed_version}"`,
-      `"${p.latest_patch_version}"`,
+      `"${p.latest_same_version_patch || p.latest_patch_version}"`,
+      `"${p.same_version_patch_status || (p.is_up_to_date ? "Up to Date" : "Patch Available")}"`,
+      `"${p.latest_market_version || p.latest_patch_version}"`,
+      `"${p.upgrade_roadmap?.upgrade_strategy || "In-Place Cumulative Rollup"}"`,
       `"${p.patch_release_date}"`,
       `"${p.patch_severity}"`,
       `"${p.hostname}"`,
       `"${p.environment}"`,
+      `"${p.owner || ""}"`,
+      `"${p.pic_email || ""}"`,
       `"${p.source_url}"`,
-      `"${p.secondary_source_url || ""}"`,
-      `"${p.recommended_action.replace(/"/g, '""')}"`
+      `"${(p.recommended_action || "").replace(/"/g, '""')}"`
     ]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `patch_tracker_report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `patch_tracker_market_roadmap_report_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -140,7 +160,10 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
       p.software_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.installed_version.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.latest_patch_version.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.latest_same_version_patch && p.latest_same_version_patch.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (p.latest_market_version && p.latest_market_version.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (p.pic_email && p.pic_email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (p.owner && p.owner.toLowerCase().includes(searchTerm.toLowerCase())) ||
       p.cve_fixes.some(c => c.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesSeverity = severityFilter === "ALL" || p.patch_severity.toUpperCase() === severityFilter.toUpperCase();
@@ -387,7 +410,7 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
         {loading ? (
           <div className="p-12 text-center text-slate-500 space-y-3">
             <RefreshCw className="w-8 h-8 animate-spin mx-auto text-indigo-600" />
-            <p className="text-sm font-medium">Loading market patch records...</p>
+            <p className="text-sm font-medium">Loading market patch & roadmap records...</p>
           </div>
         ) : filteredPatches.length === 0 ? (
           <div className="p-12 text-center text-slate-500 space-y-2">
@@ -401,127 +424,301 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500 tracking-wider">
                   <th className="py-3 px-4">Application & Host</th>
-                  <th className="py-3 px-4">Installed</th>
-                  <th className="py-3 px-4">Latest Market Patch</th>
+                  <th className="py-3 px-4">Installed Version</th>
+                  <th className="py-3 px-4">Same-Version Latest Patch</th>
+                  <th className="py-3 px-4">Market Latest Version</th>
+                  <th className="py-3 px-4">Upgrade Roadmap</th>
                   <th className="py-3 px-4">Release Date</th>
                   <th className="py-3 px-4">Patch Severity</th>
-                  <th className="py-3 px-4">Security Scope</th>
                   <th className="py-3 px-4">Source of Truth</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredPatches.map((patch) => (
-                  <tr key={patch.id} className="hover:bg-slate-50/80 transition group">
-                    {/* Application & Host */}
-                    <td className="py-3.5 px-4">
-                      <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition">
-                        {patch.software_name}
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
-                        <span className="font-mono bg-slate-100 px-1.5 py-0.2 rounded text-[11px]">
-                          {patch.hostname}
-                        </span>
-                        <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-200 text-slate-700">
-                          {patch.environment}
-                        </span>
-                      </div>
-                    </td>
+                {filteredPatches.map((patch) => {
+                  const sameVerTarget = patch.latest_same_version_patch || patch.latest_patch_version;
+                  const marketTarget = patch.latest_market_version || patch.latest_patch_version;
+                  const isSameVerUpToDate = patch.same_version_patch_status === "Up to Date" || patch.is_up_to_date;
 
-                    {/* Installed Version */}
-                    <td className="py-3.5 px-4 font-mono text-xs font-semibold text-slate-800">
-                      v{patch.installed_version}
-                    </td>
-
-                    {/* Latest Market Patch */}
-                    <td className="py-3.5 px-4 font-mono text-xs">
-                      {patch.is_up_to_date ? (
-                        <span className="text-emerald-700 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          v{patch.latest_patch_version}
-                        </span>
-                      ) : (
-                        <span className="text-indigo-700 font-extrabold bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
-                          v{patch.latest_patch_version}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Release Date */}
-                    <td className="py-3.5 px-4 text-xs font-mono">
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100/90 text-slate-800 font-semibold border border-slate-200">
-                        <Calendar className="w-3 h-3 text-indigo-600 shrink-0" />
-                        <span>{patch.patch_release_date}</span>
-                      </div>
-                    </td>
-
-                    {/* Patch Severity */}
-                    <td className="py-3.5 px-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs border ${getSeverityBadgeClass(patch.patch_severity)}`}>
-                        {patch.patch_severity}
-                      </span>
-                    </td>
-
-                    {/* Security Scope / CVE Fixes */}
-                    <td className="py-3.5 px-4">
-                      {patch.cve_fixes && patch.cve_fixes.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {patch.cve_fixes.map((cve) => (
-                            <span key={cve} className="px-1.5 py-0.5 bg-rose-50 border border-rose-200 text-rose-800 text-[11px] font-mono font-bold rounded">
-                              {cve}
-                            </span>
-                          ))}
+                  return (
+                    <tr key={patch.id} className="hover:bg-slate-50/80 transition group">
+                      {/* Application & Host */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition flex items-center gap-1.5">
+                          {patch.software_name}
                         </div>
-                      ) : (
-                        <span className="text-xs text-slate-400 italic">Maintenance Update</span>
-                      )}
-                    </td>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1 text-xs text-slate-500">
+                          <span className="font-mono bg-slate-100 px-1.5 py-0.2 rounded text-[11px] text-slate-700 font-medium">
+                            {patch.hostname}
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-200 text-slate-700">
+                            {patch.environment}
+                          </span>
+                          {patch.pic_email && (
+                            <span className="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded font-mono truncate max-w-[140px]" title={`PIC Email: ${patch.pic_email}`}>
+                              PIC: {patch.pic_email}
+                            </span>
+                          )}
+                        </div>
+                      </td>
 
-                    {/* Source of Truth Link */}
-                    <td className="py-3.5 px-4">
-                      <div className="flex flex-col gap-1">
-                        <a
-                          href={patch.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
-                          title={patch.source_url}
+                      {/* Installed Version */}
+                      <td className="py-3.5 px-4 font-mono text-xs font-semibold text-slate-800">
+                        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
+                          v{patch.installed_version}
+                        </span>
+                      </td>
+
+                      {/* Same-Version Latest Patch */}
+                      <td className="py-3.5 px-4 font-mono text-xs">
+                        <div className="space-y-1">
+                          <div className="font-bold text-slate-900">
+                            {sameVerTarget.startsWith("v") ? sameVerTarget : `v${sameVerTarget}`}
+                          </div>
+                          <div>
+                            {isSameVerUpToDate ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-1.5 py-0.2 rounded">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                At Patch Level
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.2 rounded">
+                                <AlertTriangle className="w-3 h-3 text-amber-600" />
+                                Patch Available
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Market Latest Version */}
+                      <td className="py-3.5 px-4 font-mono text-xs">
+                        <div className="space-y-1">
+                          <span className="text-indigo-800 font-extrabold bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded inline-block">
+                            {marketTarget.startsWith("v") || marketTarget.includes(" ") ? marketTarget : `v${marketTarget}`}
+                          </span>
+                          <div className="text-[10px] text-slate-500 font-sans">
+                            {patch.installed_version === marketTarget || sameVerTarget === marketTarget ? (
+                              <span className="text-emerald-600 font-semibold">Current Market Lead</span>
+                            ) : (
+                              <span className="text-indigo-600 font-medium">Newer Major Branch</span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Upgrade Roadmap Button & Preview */}
+                      <td className="py-3.5 px-4">
+                        <button
+                          onClick={() => setSelectedRoadmap(patch)}
+                          className="text-left group/roadmap cursor-pointer"
                         >
-                          <span>{patch.software_name.toLowerCase().includes("ubuntu") ? "USN Notices" : "Official Release"}</span>
-                          <ExternalLink className="w-3 h-3 shrink-0" />
-                        </a>
-                        {patch.secondary_source_url && (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 text-xs font-semibold text-indigo-900 transition">
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                            <span>{patch.upgrade_roadmap?.upgrade_strategy || "View Roadmap"}</span>
+                            <ChevronRight className="w-3 h-3 text-indigo-500 group-hover/roadmap:translate-x-0.5 transition" />
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-0.5 pl-1 truncate max-w-[150px]">
+                            {patch.upgrade_roadmap?.steps?.[0] || "Step-by-step path"}
+                          </div>
+                        </button>
+                      </td>
+
+                      {/* Release Date */}
+                      <td className="py-3.5 px-4 text-xs font-mono">
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100/90 text-slate-800 font-semibold border border-slate-200">
+                          <Calendar className="w-3 h-3 text-indigo-600 shrink-0" />
+                          <span>{patch.patch_release_date}</span>
+                        </div>
+                      </td>
+
+                      {/* Patch Severity */}
+                      <td className="py-3.5 px-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs border ${getSeverityBadgeClass(patch.patch_severity)}`}>
+                          {patch.patch_severity}
+                        </span>
+                      </td>
+
+                      {/* Source of Truth Link */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-col gap-1">
                           <a
-                            href={patch.secondary_source_url}
+                            href={patch.source_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:text-emerald-900 hover:underline font-medium"
-                            title={patch.secondary_source_url}
+                            className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
+                            title={patch.source_url}
                           >
-                            <span>UbuntuUpdates</span>
-                            <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                            <span>{patch.software_name.toLowerCase().includes("ubuntu") ? "USN Notices" : "Official Release"}</span>
+                            <ExternalLink className="w-3 h-3 shrink-0" />
                           </a>
-                        )}
-                      </div>
-                    </td>
+                          {patch.secondary_source_url && (
+                            <a
+                              href={patch.secondary_source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:text-emerald-900 hover:underline font-medium"
+                              title={patch.secondary_source_url}
+                            >
+                              <span>UbuntuUpdates</span>
+                              <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
 
-                    {/* Actions */}
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => setSelectedPatch(patch)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg border border-indigo-200 transition cursor-pointer"
-                      >
-                        Details & Remediation
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setSelectedPatch(patch)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg border border-indigo-200 transition cursor-pointer"
+                          >
+                            Details & Remediation
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* Upgrade Roadmap Modal */}
+      {selectedRoadmap && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 border border-indigo-200">
+                    Upgrade Roadmap & Path
+                  </span>
+                  <span className="text-xs text-slate-500 font-mono">
+                    {selectedRoadmap.hostname} ({selectedRoadmap.environment})
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                  {selectedRoadmap.software_name} Upgrade Path
+                </h2>
+              </div>
+              <button
+                onClick={() => setSelectedRoadmap(null)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 3-Tier Version Visualizer */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-center">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Current Installed</span>
+                <div className="text-base font-mono font-bold text-slate-900 mt-1">
+                  v{selectedRoadmap.installed_version}
+                </div>
+                <span className="inline-block mt-1 text-[10px] bg-slate-200 text-slate-700 px-2 py-0.2 rounded font-semibold">
+                  Active Asset Level
+                </span>
+              </div>
+
+              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3.5 text-center">
+                <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Same-Version Patch</span>
+                <div className="text-base font-mono font-bold text-amber-900 mt-1">
+                  {selectedRoadmap.latest_same_version_patch || selectedRoadmap.latest_patch_version}
+                </div>
+                <span className="inline-block mt-1 text-[10px] bg-amber-100 text-amber-800 px-2 py-0.2 rounded font-bold border border-amber-200">
+                  {selectedRoadmap.same_version_patch_status || "Branch Maintenance"}
+                </span>
+              </div>
+
+              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3.5 text-center">
+                <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Market Latest Target</span>
+                <div className="text-base font-mono font-bold text-indigo-900 mt-1">
+                  {selectedRoadmap.latest_market_version || selectedRoadmap.latest_patch_version}
+                </div>
+                <span className="inline-block mt-1 text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.2 rounded font-bold border border-indigo-200">
+                  Vendor Market Lead
+                </span>
+              </div>
+            </div>
+
+            {/* Upgrade Strategy Details */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase text-slate-600 tracking-wider">
+                  Recommended Deployment Strategy
+                </span>
+                <span className="text-xs font-extrabold text-indigo-700 bg-indigo-100/80 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                  {selectedRoadmap.upgrade_roadmap?.upgrade_strategy || "In-Place Cumulative Rollup"}
+                </span>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <div className="text-xs font-bold text-slate-700">Actionable Roadmap Steps:</div>
+                {selectedRoadmap.upgrade_roadmap?.steps && selectedRoadmap.upgrade_roadmap.steps.length > 0 ? (
+                  selectedRoadmap.upgrade_roadmap.steps.map((step, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 p-2.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 font-medium">
+                      <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shrink-0 text-[11px]">
+                        {idx + 1}
+                      </span>
+                      <span className="leading-relaxed">{step}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-600">
+                    Apply cumulative security maintenance rollup during scheduled maintenance window.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Command Box */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                  <Terminal className="w-4 h-4 text-slate-700" />
+                  Upgrade Execution Command
+                </h3>
+                <button
+                  onClick={() => handleCopyCommand(selectedRoadmap.recommended_action)}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  {copiedCmd ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedCmd ? "Copied!" : "Copy Command"}
+                </button>
+              </div>
+              <div className="bg-slate-900 text-slate-100 font-mono text-xs p-3.5 rounded-xl border border-slate-800 overflow-x-auto">
+                <code>{selectedRoadmap.recommended_action}</code>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <a
+                href={selectedRoadmap.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline font-semibold"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                View Vendor Release Documentation
+              </a>
+              <button
+                onClick={() => setSelectedRoadmap(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Patch Details Modal / Drawer */}
       {selectedPatch && (
@@ -540,10 +737,13 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                   </span>
                 </div>
                 <h2 className="text-xl font-bold text-slate-900">
-                  {selectedPatch.software_name} Patch Release v{selectedPatch.latest_patch_version}
+                  {selectedPatch.software_name} Patch Intelligence
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Target Host: <strong className="text-slate-800">{selectedPatch.hostname}</strong> ({selectedPatch.environment})
+                  {selectedPatch.pic_email && (
+                    <span className="ml-2 text-indigo-700 font-mono">| PIC: {selectedPatch.pic_email}</span>
+                  )}
                 </p>
               </div>
 
@@ -555,17 +755,48 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
               </button>
             </div>
 
-            {/* Version Delta Banner */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-4 text-center">
+            {/* 3-Tier Version Delta Banner */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
               <div>
                 <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Installed Version</span>
-                <div className="text-lg font-mono font-bold text-slate-800 mt-0.5">v{selectedPatch.installed_version}</div>
+                <div className="text-base font-mono font-bold text-slate-800 mt-0.5">v{selectedPatch.installed_version}</div>
               </div>
               <div>
-                <span className="text-xs text-indigo-600 uppercase font-bold tracking-wider">Market Patch Version</span>
-                <div className="text-lg font-mono font-bold text-indigo-700 mt-0.5">v{selectedPatch.latest_patch_version}</div>
+                <span className="text-xs text-amber-700 uppercase font-bold tracking-wider">Same-Version Patch</span>
+                <div className="text-base font-mono font-bold text-amber-900 mt-0.5">
+                  {selectedPatch.latest_same_version_patch || selectedPatch.latest_patch_version}
+                </div>
+              </div>
+              <div>
+                <span className="text-xs text-indigo-600 uppercase font-bold tracking-wider">Market Latest Target</span>
+                <div className="text-base font-mono font-bold text-indigo-700 mt-0.5">
+                  {selectedPatch.latest_market_version || selectedPatch.latest_patch_version}
+                </div>
               </div>
             </div>
+
+            {/* Upgrade Roadmap & Strategy Section */}
+            {selectedPatch.upgrade_roadmap && (
+              <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase text-indigo-900 tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                    Upgrade Roadmap & Path to Latest Release
+                  </h3>
+                  <span className="text-[11px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded border border-indigo-200">
+                    {selectedPatch.upgrade_roadmap.upgrade_strategy}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {selectedPatch.upgrade_roadmap.steps.map((step, idx) => (
+                    <div key={idx} className="text-xs text-slate-700 flex items-start gap-2 bg-white/80 p-2 rounded border border-indigo-50">
+                      <span className="font-bold text-indigo-600 shrink-0">{idx + 1}.</span>
+                      <span>{step}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Patch Summary */}
             <div>
@@ -573,7 +804,7 @@ export default function PatchTrackerGrid({ userRole, refreshTrigger }: PatchTrac
                 <Info className="w-4 h-4 text-indigo-600" />
                 Release Notes & Patch Highlights
               </h3>
-              <p className="text-sm text-slate-700 bg-indigo-50/50 border border-indigo-100 p-3.5 rounded-xl leading-relaxed">
+              <p className="text-sm text-slate-700 bg-slate-50 border border-slate-200 p-3.5 rounded-xl leading-relaxed">
                 {selectedPatch.release_notes_summary}
               </p>
             </div>

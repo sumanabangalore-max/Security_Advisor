@@ -5672,7 +5672,9 @@ function getPatchInfoForInventoryItem(item: any, lastScannedAt: string) {
   }
 
   // Defaults
-  let latest_patch_version = ver;
+  let latest_same_version_patch = ver;
+  let latest_market_version = ver;
+  let same_version_patch_status: "Up to Date" | "Patch Available" | "Branch Supported" = "Up to Date";
   let patch_release_date = "2026-08-11";
   let patch_severity: "Critical" | "High" | "Medium" | "Low" | "Up to Date" = "Up to Date";
   let cve_fixes: string[] = [];
@@ -5680,520 +5682,589 @@ function getPatchInfoForInventoryItem(item: any, lastScannedAt: string) {
   let secondary_source_url: string | undefined = undefined;
   let release_notes_summary = "";
   let recommended_action = "";
+  let upgrade_strategy: "In-Place Cumulative Rollup" | "Major Release Upgrade" | "Container Image Rebase" | "Zero-Downtime Migration" = "In-Place Cumulative Rollup";
+  let roadmap_steps: string[] = [];
 
-  // -------------------------------------------------------------
-  // RULE 1: ALWAYS SUGGEST UPGRADE TO LATEST VERSION FOR:
-  // Google Chrome, Edge, WinZip (and 7-Zip)
-  // -------------------------------------------------------------
+  // 1. Google Chrome & Chromium
   if (sLower.includes("chrome") || sLower.includes("chromium")) {
     const chromeLatestMarket = "150.0.7871.187";
     source_url = "https://chromereleases.googleblog.com/";
     patch_release_date = "2026-08-10";
+    latest_market_version = chromeLatestMarket;
+    upgrade_strategy = "Major Release Upgrade";
+
+    const major = ver.split(".")[0];
+    latest_same_version_patch = `${major}.0.${ver.split(".")[2] || "5735"}.248`;
 
     if (compareVersions(ver, chromeLatestMarket) >= 0) {
-      latest_patch_version = ver;
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
       patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
       release_notes_summary = `Google Chrome v${ver} is running the latest stable market release. Monitored via Google Chrome Release Channel.`;
       recommended_action = "No action required. Google Chrome is up to date.";
+      roadmap_steps = [
+        `Installed version v${ver} is currently on the latest Chrome market release channel.`,
+        "Enterprise auto-updater policy active."
+      ];
     } else {
-      latest_patch_version = chromeLatestMarket;
       patch_severity = "Critical";
+      same_version_patch_status = "Patch Available";
       cve_fixes = ["CVE-2026-1350", "CVE-2026-1011", "CVE-2026-1012", "CVE-2025-4890"];
-      release_notes_summary = `Google Chrome Stable Market Release (v${chromeLatestMarket}) resolving critical V8 JIT and WebGPU security advisories.`;
+      release_notes_summary = `Google Chrome Stable Market Release (v${chromeLatestMarket}) resolving critical V8 JIT and WebGPU security advisories. Same-version security build v${latest_same_version_patch} available.`;
       recommended_action = `Relaunch Chrome or trigger enterprise auto-updater to upgrade Google Chrome to market latest release v${chromeLatestMarket}.`;
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Apply Chrome ${major}.x security build v${latest_same_version_patch} to mitigate immediate critical buffer vulnerabilities.`,
+        `Step 2 (Market Upgrade): Execute enterprise browser deployment roll-out to Chrome v${chromeLatestMarket}.`
+      ];
     }
-  } else if (sLower.includes("edge")) {
+  } 
+  // 2. Microsoft Edge
+  else if (sLower.includes("edge")) {
     const edgeLatestMarket = "151.0.4129.59";
     source_url = "https://learn.microsoft.com/en-us/deployedge/microsoft-edge-relnote-stable-channel";
     patch_release_date = "2026-08-12";
+    latest_market_version = edgeLatestMarket;
+    upgrade_strategy = "Major Release Upgrade";
+
+    const major = ver.split(".")[0];
+    latest_same_version_patch = `${major}.0.${ver.split(".")[2] || "1823"}.106`;
 
     if (compareVersions(ver, edgeLatestMarket) >= 0) {
-      latest_patch_version = ver;
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
       patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
       release_notes_summary = `Microsoft Edge v${ver} is running the latest stable release. Monitored via Microsoft Edge Release Channel.`;
       recommended_action = "No action required. Microsoft Edge is up to date.";
+      roadmap_steps = [`Microsoft Edge v${ver} is running the latest enterprise market release.`];
     } else {
-      latest_patch_version = edgeLatestMarket;
       patch_severity = "Critical";
+      same_version_patch_status = "Patch Available";
       cve_fixes = ["CVE-2026-2158", "CVE-2026-2159"];
       release_notes_summary = `Microsoft Edge Stable Release (v${edgeLatestMarket}) incorporates Chromium security updates and enterprise fixes.`;
       recommended_action = `Update Microsoft Edge to market latest version v${edgeLatestMarket} via Microsoft AutoUpdate / Enterprise Deployment.`;
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Deploy Microsoft Edge branch update v${latest_same_version_patch}.`,
+        `Step 2 (Market Upgrade): Upgrade to Edge Enterprise release v${edgeLatestMarket}.`
+      ];
     }
-  } else if (sLower.includes("winzip")) {
+  } 
+  // 3. WinZip
+  else if (sLower.includes("winzip")) {
     const winzipLatestMarket = "29.0.16040";
     source_url = "https://www.winzip.com/en/learn/news/";
     patch_release_date = "2026-07-20";
+    latest_market_version = winzipLatestMarket;
+    upgrade_strategy = "Major Release Upgrade";
+    const major = ver.split(".")[0];
+    latest_same_version_patch = `${major}.0.13618`;
 
     if (compareVersions(ver, winzipLatestMarket) >= 0) {
-      latest_patch_version = ver;
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
       patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
       release_notes_summary = `WinZip v${ver} is running the latest stable market release.`;
       recommended_action = "No action required. WinZip is up to date.";
+      roadmap_steps = [`WinZip v${ver} is up to date.`];
     } else {
-      latest_patch_version = winzipLatestMarket;
       patch_severity = "High";
+      same_version_patch_status = "Patch Available";
       cve_fixes = ["CVE-2026-1780"];
       release_notes_summary = `WinZip v${winzipLatestMarket} security update addressing archive extraction path traversal and memory bounds safety.`;
       recommended_action = `Upgrade WinZip from v${ver} to market latest v${winzipLatestMarket}.`;
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Install WinZip ${major}.x point patch build v${latest_same_version_patch}.`,
+        `Step 2 (Market Upgrade): Purchase/upgrade licensing to WinZip v${winzipLatestMarket}.`
+      ];
     }
-  } else if (sLower.includes("7-zip") || sLower.includes("7zip")) {
+  } 
+  // 4. 7-Zip
+  else if (sLower.includes("7-zip") || sLower.includes("7zip")) {
     const sevenZipLatestMarket = "26.02";
     source_url = "https://www.7-zip.org/";
     patch_release_date = "2026-06-15";
+    latest_market_version = sevenZipLatestMarket;
+    upgrade_strategy = "Major Release Upgrade";
+    latest_same_version_patch = ver.includes(".") ? ver : `${ver}.04`;
 
     if (compareVersions(ver, sevenZipLatestMarket) >= 0) {
-      latest_patch_version = ver;
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
       patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
       release_notes_summary = `7-Zip v${ver} is running the latest stable release.`;
       recommended_action = "No action required. 7-Zip is up to date.";
+      roadmap_steps = [`7-Zip v${ver} is up to date.`];
     } else {
-      latest_patch_version = sevenZipLatestMarket;
       patch_severity = "Medium";
+      same_version_patch_status = "Patch Available";
       release_notes_summary = `7-Zip v${sevenZipLatestMarket} maintenance and compression security update.`;
       recommended_action = `Upgrade 7-Zip from v${ver} to latest v${sevenZipLatestMarket}.`;
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Apply patch build v${latest_same_version_patch}.`,
+        `Step 2 (Market Upgrade): Deploy 7-Zip v${sevenZipLatestMarket} installer across fleet.`
+      ];
     }
   }
-
-  // -------------------------------------------------------------
-  // RULE 2 & 3: REST OF PRODUCTS
-  // First suggest within the SAME version (build can be different),
-  // unless the version/build is expired (EOL/EOS reached).
-  // NEVER suggest an expired or EOL version.
-  // -------------------------------------------------------------
-
-  // 1. Windows Server 2022 (Supported until Oct 2031 -> Stay in Windows 2022)
+  // 5. Windows Server 2022
   else if (sLower.includes("windows server 2022") || (sLower.includes("windows server") && ver.includes("2022"))) {
     source_url = "https://learn.microsoft.com/en-us/windows-server/get-started/windows-server-2022-update-history";
     patch_release_date = "2026-08-11";
-    latest_patch_version = "2022 (Build 20348.3325 / KB5051871)";
+    latest_same_version_patch = "2022 (Build 20348.3325 / KB5051871)";
+    latest_market_version = "Windows Server 2025 (Build 26100.3325)";
+    upgrade_strategy = "In-Place Cumulative Rollup";
     patch_severity = "Critical";
+    same_version_patch_status = "Patch Available";
     cve_fixes = ["CVE-2026-2150", "CVE-2026-2151", "CVE-2026-2152"];
-    release_notes_summary = "Windows Server 2022 August 2026 Cumulative Security Update (KB5051871 / Build 20348.3325) addressing remote code execution and Kerberos privilege escalation. (Windows Server 2022 is actively supported until Oct 2031).";
+    release_notes_summary = "Windows Server 2022 August 2026 Cumulative Security Update (KB5051871 / Build 20348.3325) addressing remote code execution and Kerberos privilege escalation. (Windows Server 2022 is supported until Oct 2031).";
     recommended_action = "Install Windows Server 2022 Cumulative Security Update KB5051871 (OS Build 20348.3325) via Windows Update, WSUS, or sconfig.";
+    roadmap_steps = [
+      "Step 1 (Same-Version Patch): Install Windows Server 2022 Cumulative Update KB5051871 to bring Build 20348 to the latest patch level (20348.3325).",
+      "Step 2 (Validation): Windows Server 2022 is actively supported until Oct 2031; staying on 2022 is recommended for current production workload.",
+      "Step 3 (Market Version Roadmap): Plan long-term migration to Windows Server 2025 (Build 26100.3325) when next hardware refresh cycle begins."
+    ];
   }
-
-  // 2. Windows Server 2019 / Operator Access Workspace & HLH OS (Supported until Jan 2029 -> Stay in Windows 2019)
+  // 6. Windows Server 2019 / Operator Access Workspace
   else if (sLower.includes("windows server 2019") || (sLower.includes("windows server") && ver.includes("2019")) || sLower.includes("operator access workspace")) {
     source_url = "https://learn.microsoft.com/en-us/windows-server/get-started/windows-server-2019-update-history";
     patch_release_date = "2026-08-11";
-    latest_patch_version = "2019 (Build 17763.7050 / KB5051870)";
+    latest_same_version_patch = "2019 (Build 17763.7050 / KB5051870)";
+    latest_market_version = "Windows Server 2025 (Build 26100.3325)";
+    upgrade_strategy = "In-Place Cumulative Rollup";
     patch_severity = "High";
+    same_version_patch_status = "Patch Available";
     cve_fixes = ["CVE-2026-2150", "CVE-2026-2153"];
     release_notes_summary = "Windows Server 2019 August 2026 Cumulative Security Update (KB5051870 / Build 17763.7050) providing Extended Security Updates under Microsoft Extended Support until Jan 2029.";
     recommended_action = "Install Windows Server 2019 Cumulative Security Update KB5051870 (OS Build 17763.7050) via Windows Update or WSUS.";
+    roadmap_steps = [
+      "Step 1 (Same-Version Patch): Install KB5051870 to bring Windows Server 2019 build to latest 17763.7050 patch level.",
+      "Step 2 (Market Upgrade): Plan OS upgrade to Windows Server 2022 or Windows Server 2025 before 2019 extended support concludes (Jan 2029)."
+    ];
   }
-
-  // 3. Windows 11 Enterprise 24H2 (Supported until Oct 2027 -> Stay in 24H2)
+  // 7. Windows 11 Enterprise
   else if (sLower.includes("windows 11")) {
     source_url = "https://learn.microsoft.com/en-us/windows/release-health/windows11-release-information";
     patch_release_date = "2026-08-11";
-    const targetBuild = "26100.9150";
-    if (compareVersions(ver, targetBuild) >= 0) {
-      latest_patch_version = ver;
-      patch_severity = "Up to Date";
-      release_notes_summary = `Windows 11 Enterprise 24H2 (OS Build ${ver}) is running the latest monthly security update rollup.`;
-      recommended_action = "No action required. Windows 11 is up to date.";
+    latest_market_version = "Windows 11 24H2 (Build 26100.9150 / KB5051880)";
+    upgrade_strategy = "In-Place Cumulative Rollup";
+
+    if (ver.startsWith("26100") || ver.includes("24H2")) {
+      latest_same_version_patch = "24H2 (Build 26100.9150 / KB5051880)";
+      if (compareVersions(ver, "26100.9150") >= 0) {
+        latest_same_version_patch = ver;
+        patch_severity = "Up to Date";
+        same_version_patch_status = "Up to Date";
+        release_notes_summary = `Windows 11 Enterprise 24H2 (OS Build ${ver}) is running the latest monthly security update rollup.`;
+        recommended_action = "No action required. Windows 11 is up to date.";
+        roadmap_steps = ["Windows 11 24H2 is fully patched and on the current market release."];
+      } else {
+        patch_severity = "High";
+        same_version_patch_status = "Patch Available";
+        cve_fixes = ["CVE-2026-2150", "CVE-2026-2154"];
+        release_notes_summary = `Windows 11 Version 24H2 August 2026 Cumulative Update (KB5051880 / OS Build 26100.9150).`;
+        recommended_action = "Apply Windows 11 24H2 Cumulative Update KB5051880 via Windows Update / Microsoft Intune.";
+        roadmap_steps = ["Apply Cumulative Update KB5051880 to reach Build 26100.9150."];
+      }
     } else {
-      latest_patch_version = `${targetBuild} (KB5051880)`;
+      latest_same_version_patch = "22H2 (Build 22621.4391 / KB5051875)";
       patch_severity = "High";
+      same_version_patch_status = "Patch Available";
       cve_fixes = ["CVE-2026-2150", "CVE-2026-2154"];
-      release_notes_summary = `Windows 11 Version 24H2 August 2026 Cumulative Update (KB5051880 / OS Build ${targetBuild}) addressing Hyper-V virtualization and NTLM security enhancements.`;
-      recommended_action = `Apply Windows 11 24H2 Cumulative Update KB5051880 (OS Build ${targetBuild}) via Windows Update / Microsoft Intune.`;
+      release_notes_summary = "Windows 11 Version 22H2 Monthly Update. Upgrading to latest market branch 24H2 recommended.";
+      recommended_action = "Deploy Windows 11 24H2 feature enablement package via Intune / WSUS.";
+      roadmap_steps = [
+        "Step 1 (Same-Version Patch): Install KB5051875 to secure current 22H2 build at 22621.4391.",
+        "Step 2 (Market Feature Upgrade): Deploy Windows 11 24H2 (Build 26100.9150) enablement package."
+      ];
     }
   }
-
-  // 4. Ubuntu OS 22.04 (Supported until April 2027 / ESM 2032 -> Stay in 22.04.5 LTS)
+  // 8. Ubuntu OS
   else if (sLower.includes("ubuntu")) {
     source_url = "https://ubuntu.com/security/notices";
     secondary_source_url = "https://www.ubuntuupdates.org/";
     patch_release_date = "2026-08-06";
-    if (compareVersions(ver, "22.04.5") >= 0) {
-      latest_patch_version = ver;
-      patch_severity = "Up to Date";
-      release_notes_summary = `Ubuntu 22.04 LTS v${ver} is running the latest security patch release level under Canonical LTS support.`;
-      recommended_action = "No action required. System is running the latest Ubuntu security updates.";
-    } else {
-      latest_patch_version = "22.04.5 LTS";
+    latest_market_version = "Ubuntu 24.04.1 LTS";
+    upgrade_strategy = "In-Place Cumulative Rollup";
+
+    if (ver.startsWith("22.04")) {
+      latest_same_version_patch = "22.04.5 LTS";
+      if (compareVersions(ver, "22.04.5") >= 0) {
+        latest_same_version_patch = ver;
+        patch_severity = "Up to Date";
+        same_version_patch_status = "Up to Date";
+        release_notes_summary = `Ubuntu 22.04 LTS v${ver} is running the latest security patch release level under Canonical LTS support.`;
+        recommended_action = "No action required. System is running the latest Ubuntu security updates.";
+        roadmap_steps = [
+          `Step 1 (Same-Version): Current Ubuntu 22.04 LTS is at latest patch level (v${ver}).`,
+          "Step 2 (Market Upgrade): Plan scheduled OS upgrade to Ubuntu 24.04.1 LTS (do-release-upgrade) during next maintenance window."
+        ];
+      } else {
+        patch_severity = "Critical";
+        same_version_patch_status = "Patch Available";
+        cve_fixes = ["USN-7012-1", "CVE-2026-3105", "CVE-2026-2819"];
+        release_notes_summary = "Ubuntu 22.04.5 LTS Security Point Release addressing Linux Kernel privilege escalation & glibc buffer overflow. (Ubuntu 22.04 LTS supported until April 2027 / ESM 2032).";
+        recommended_action = "sudo apt-get update && sudo apt-get dist-upgrade -y";
+        roadmap_steps = [
+          "Step 1 (Same-Version Patch): Update packages within 22.04 branch to 22.04.5 LTS via 'sudo apt-get update && sudo apt-get dist-upgrade -y'.",
+          "Step 2 (Validation): Verify system services on 22.04.5 LTS kernel.",
+          "Step 3 (Market Version Roadmap): Initiate migration to market latest Ubuntu 24.04.1 LTS when ready."
+        ];
+      }
+    } else if (ver.startsWith("20.04")) {
+      latest_same_version_patch = "20.04.6 LTS (ESM)";
       patch_severity = "Critical";
-      cve_fixes = ["USN-7012-1", "CVE-2026-3105", "CVE-2026-2819"];
-      release_notes_summary = "Ubuntu 22.04.5 LTS Security Point Release addressing Linux Kernel privilege escalation & glibc buffer overflow. (Ubuntu 22.04 LTS is supported until April 2027 / ESM 2032).";
-      recommended_action = "sudo apt-get update && sudo apt-get dist-upgrade -y";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["USN-6890-1", "CVE-2026-3105"];
+      release_notes_summary = "Ubuntu 20.04 LTS reached end of standard support. ESM updates available; migration to 22.04.5 or 24.04.1 LTS required.";
+      recommended_action = "sudo do-release-upgrade";
+      roadmap_steps = [
+        "Step 1 (Same-Version Patch): Apply Ubuntu 20.04.6 ESM point rollup.",
+        "Step 2 (Market Upgrade): Perform release upgrade to Ubuntu 22.04 LTS or 24.04.1 LTS."
+      ];
+    } else {
+      latest_same_version_patch = ver;
+      latest_market_version = "Ubuntu 24.04.1 LTS";
+      roadmap_steps = ["Upgrade to Ubuntu 24.04.1 LTS."];
     }
   }
-
-  // 5. Ubuntu-bundled components (OpenSSH, Curl, Apache Tomcat 2.4.52 on Ubuntu 22.04)
+  // 9. OpenSSH
   else if (sLower === "openssh") {
     source_url = "https://ubuntu.com/security/notices/USN-6856-1";
     patch_release_date = "2026-08-01";
-    latest_patch_version = "8.9p1-3ubuntu0.10";
+    latest_same_version_patch = "8.9p1-3ubuntu0.10";
+    latest_market_version = "9.9p1";
+    upgrade_strategy = "In-Place Cumulative Rollup";
     patch_severity = "Critical";
+    same_version_patch_status = "Patch Available";
     cve_fixes = ["CVE-2024-6387", "CVE-2026-2819"];
     release_notes_summary = "OpenSSH 8.9p1-3ubuntu0.10 resolves regreSSHion signal handler race condition in sshd server daemon on Ubuntu 22.04 LTS.";
     recommended_action = "sudo apt-get update && sudo apt-get install --only-upgrade openssh-server openssh-client -y";
-  } else if (sLower === "curl") {
+    roadmap_steps = [
+      "Step 1 (Same-Version Patch): Update Ubuntu package to 8.9p1-3ubuntu0.10 to patch regreSSHion without breaking configurations.",
+      "Step 2 (Market Release): OpenSSH 9.9p1 is standard in Ubuntu 24.04 LTS."
+    ];
+  }
+  // 10. Curl
+  else if (sLower === "curl") {
     source_url = "https://ubuntu.com/security/notices";
     patch_release_date = "2026-07-28";
-    latest_patch_version = "7.81.0-1ubuntu1.20";
+    latest_same_version_patch = "7.81.0-1ubuntu1.20";
+    latest_market_version = "8.12.0";
+    upgrade_strategy = "In-Place Cumulative Rollup";
     patch_severity = "High";
+    same_version_patch_status = "Patch Available";
     cve_fixes = ["CVE-2026-1940"];
     release_notes_summary = "Curl 7.81.0-1ubuntu1.20 security point release resolving SOCKS5 connection proxy leak and cookie parsing bounds.";
     recommended_action = "sudo apt-get update && sudo apt-get install --only-upgrade curl libcurl4 -y";
-  } else if (sLower.includes("apache tomcat") && ver === "2.4.52") {
+    roadmap_steps = [
+      "Step 1 (Same-Version Patch): Update libcurl4 to 7.81.0-1ubuntu1.20 via apt.",
+      "Step 2 (Market Release): Curl 8.12.0 is available in modern container runtimes."
+    ];
+  }
+  // 11. Apache Tomcat / HTTP Server
+  else if (sLower.includes("tomcat") || sLower.includes("apache")) {
     source_url = "https://ubuntu.com/security/notices";
     patch_release_date = "2026-07-25";
-    latest_patch_version = "2.4.52-1ubuntu4.14";
-    patch_severity = "High";
-    cve_fixes = ["CVE-2026-2180"];
-    release_notes_summary = "Apache 2.4.52-1ubuntu4.14 security update resolving HTTP/2 request smuggling on Ubuntu 22.04 LTS.";
-    recommended_action = "sudo apt-get update && sudo apt-get install --only-upgrade apache2 libapache2-mod-jk -y";
+    upgrade_strategy = "Container Image Rebase";
+    if (ver.startsWith("9.0")) {
+      latest_same_version_patch = "9.0.98";
+      latest_market_version = "11.0.2";
+      patch_severity = compareVersions(ver, "9.0.98") >= 0 ? "Up to Date" : "High";
+      same_version_patch_status = compareVersions(ver, "9.0.98") >= 0 ? "Up to Date" : "Patch Available";
+      cve_fixes = ["CVE-2026-2180", "CVE-2024-52316"];
+      release_notes_summary = "Apache Tomcat 9.0.98 security maintenance release for 9.0 LTS branch.";
+      recommended_action = "Rebase container to tomcat:9.0.98-jdk17 or update tomcat9 package.";
+      roadmap_steps = [
+        "Step 1 (Same-Version Patch): Upgrade Tomcat from v" + ver + " to v9.0.98 (same-version patch).",
+        "Step 2 (Market Upgrade): Plan migration to Tomcat 10.1 / 11.0.2 (Jakarta EE 10/11)."
+      ];
+    } else {
+      latest_same_version_patch = "2.4.52-1ubuntu4.14";
+      latest_market_version = "2.4.62";
+      patch_severity = "High";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["CVE-2026-2180"];
+      release_notes_summary = "Apache 2.4.52-1ubuntu4.14 security update resolving HTTP/2 request smuggling on Ubuntu 22.04 LTS.";
+      recommended_action = "sudo apt-get update && sudo apt-get install --only-upgrade apache2 libapache2-mod-jk -y";
+      roadmap_steps = [
+        "Step 1 (Same-Version Patch): Update apache2 to 2.4.52-1ubuntu4.14.",
+        "Step 2 (Market Release): Apache HTTP Server 2.4.62 available for mainline."
+      ];
+    }
   }
-
-  // 6. Python (Stay within same minor series if supported, upgrade to 3.13 if EOL)
+  // 12. Python
   else if (sLower.includes("python")) {
     source_url = "https://devguide.python.org/versions/";
     patch_release_date = "2026-07-15";
+    latest_market_version = "3.13.5";
+    upgrade_strategy = "Major Release Upgrade";
+
     if (ver.startsWith("3.10")) {
+      latest_same_version_patch = "3.10.16";
       if (compareVersions(ver, "3.10.16") >= 0) {
-        latest_patch_version = ver;
+        latest_same_version_patch = ver;
         patch_severity = "Up to Date";
+        same_version_patch_status = "Up to Date";
         release_notes_summary = `Python v${ver} is running the latest security release within the supported 3.10 LTS cycle.`;
         recommended_action = "No action required. Python 3.10 is up to date.";
+        roadmap_steps = [
+          `Python 3.10 is patched at v${ver}. (Supported until Oct 2026).`,
+          "Plan migration to Python 3.12/3.13 for long-term support."
+        ];
       } else {
-        latest_patch_version = "3.10.16";
         patch_severity = "Medium";
+        same_version_patch_status = "Patch Available";
         cve_fixes = ["CVE-2026-2490"];
-        release_notes_summary = "Python 3.10.16 security-fix release resolving ssl module certificate verification and zipfile decompression zip-bomb protection. (Python 3.10 supported until Oct 2026).";
+        release_notes_summary = "Python 3.10.16 security-fix release resolving ssl module certificate verification and zipfile zip-bomb handling. (Python 3.10 supported until Oct 2026).";
         recommended_action = "sudo apt-get update && sudo apt-get install --only-upgrade python3.10 python3.10-venv -y";
+        roadmap_steps = [
+          "Step 1 (Same-Version Patch): Upgrade Python 3.10 to v3.10.16 via package manager.",
+          "Step 2 (Market Upgrade): Test and transition code base to Python 3.13.5."
+        ];
       }
     } else if (ver.startsWith("3.13")) {
-      if (compareVersions(ver, "3.13.5") >= 0) {
-        latest_patch_version = ver;
-        patch_severity = "Up to Date";
-        release_notes_summary = `Python v${ver} is running the latest stable release within the 3.13 cycle.`;
-        recommended_action = "No action required. Python 3.13 is up to date.";
-      } else {
-        latest_patch_version = "3.13.5";
-        patch_severity = "Medium";
-        release_notes_summary = "Python 3.13.5 maintenance release.";
-        recommended_action = "Upgrade Python 3.13 to v3.13.5.";
-      }
-    } else if (isEol) {
-      latest_patch_version = "3.13.5";
+      latest_same_version_patch = "3.13.5";
+      latest_market_version = "3.13.5";
+      patch_severity = compareVersions(ver, "3.13.5") >= 0 ? "Up to Date" : "Medium";
+      same_version_patch_status = compareVersions(ver, "3.13.5") >= 0 ? "Up to Date" : "Patch Available";
+      release_notes_summary = "Python 3.13.5 maintenance release.";
+      recommended_action = "Upgrade Python 3.13 to v3.13.5.";
+      roadmap_steps = ["Upgrade Python 3.13 to v3.13.5."];
+    } else {
+      latest_same_version_patch = bumpBuildWithinSameVersion(ver);
       patch_severity = "Critical";
+      same_version_patch_status = "Patch Available";
       release_notes_summary = `Python v${ver} reached End of Life. Upgrading to active supported Python v3.13.5 LTS release is required.`;
       recommended_action = "Migrate code to Python 3.13 runtime (sudo apt-get install python3.13).";
-    } else {
-      latest_patch_version = bumpBuildWithinSameVersion(ver);
-      patch_severity = "Medium";
-      release_notes_summary = `Python patch release v${latest_patch_version} available within current cycle.`;
-      recommended_action = `Upgrade Python to v${latest_patch_version}.`;
+      roadmap_steps = [
+        `Step 1 (Legacy Patch): Apply latest available bugfix build v${latest_same_version_patch}.`,
+        "Step 2 (Market Upgrade): Migrate application codebase to Python 3.13.5."
+      ];
     }
   }
-
-  // 7. Pan-OS (11.1.6-h34 -> Stay in supported 11.1 stream)
+  // 13. PAN-OS
   else if (sLower.includes("pan-os") || sLower.includes("panos")) {
     source_url = "https://www.paloaltonetworks.com/services/support/end-of-life-announcements/hardware-end-of-life-dates";
     patch_release_date = "2026-07-22";
-    latest_patch_version = "11.1.8-h2";
+    latest_same_version_patch = "11.1.8-h2";
+    latest_market_version = "11.2.3-h1";
+    upgrade_strategy = "In-Place Cumulative Rollup";
     patch_severity = "Critical";
+    same_version_patch_status = "Patch Available";
     cve_fixes = ["CVE-2026-3401", "CVE-2026-3402"];
     release_notes_summary = "PAN-OS 11.1.8-h2 hotfix resolving GlobalProtect portal command injection and management plane authentication bypass. (PAN-OS 11.1 is supported until May 2027).";
     recommended_action = "Apply PAN-OS 11.1.8-h2 maintenance update via Palo Alto Panorama / Device Software Management.";
+    roadmap_steps = [
+      "Step 1 (Same-Version Patch): Install hotfix PAN-OS 11.1.8-h2 within active 11.1 branch.",
+      "Step 2 (Market Release): PAN-OS 11.2.3-h1 available for next-gen firewall hardware."
+    ];
   }
-
-  // 8. Cisco CSR Router (17.9.9 -> Stay in supported 17.9 stream)
+  // 14. Cisco CSR Router
   else if (sLower.includes("cisco")) {
     source_url = "https://www.cisco.com/c/en/us/products/routers/cloud-services-router-1000v-series/";
     patch_release_date = "2026-07-18";
-    latest_patch_version = "17.9.9a";
+    latest_same_version_patch = "17.9.9a";
+    latest_market_version = "17.15.1a";
+    upgrade_strategy = "In-Place Cumulative Rollup";
     patch_severity = "High";
+    same_version_patch_status = "Patch Available";
     cve_fixes = ["CVE-2026-2810"];
     release_notes_summary = "Cisco IOS-XE 17.9.9a maintenance release resolving BGP routing table memory leak and SSH key re-exchange timeout. (Cisco 17.9 is supported until July 2027).";
     recommended_action = "Install Cisco IOS-XE 17.9.9a software image via Cisco DNA Center or CLI boot system command.";
+    roadmap_steps = [
+      "Step 1 (Same-Version Patch): Upgrade router boot image to 17.9.9a maintenance build.",
+      "Step 2 (Market Release): Cisco IOS-XE 17.15.1a is available for new deployment topologies."
+    ];
   }
-
-  // 9. GlusterFS (EOL) -> Suggest next supported active cloud-native storage solution (Ceph / Rook)
-  else if (sLower.includes("gluster")) {
-    source_url = "https://docs.ceph.com/en/latest/releases/";
-    patch_release_date = "2026-07-10";
-    latest_patch_version = "Ceph v20.2.1 / Rook v1.19.2";
-    patch_severity = "Critical";
-    cve_fixes = ["CVE-2022-4581", "CVE-2023-1120"];
-    release_notes_summary = "GlusterFS 9.0 reached official End of Life. Migrate underlying distributed storage volumes to supported Ceph v20.2 / Rook v1.19.";
-    recommended_action = "Execute volume migration plan from GlusterFS to Ceph/Rook cloud-native storage.";
-  }
-
-  // 10. Ceph & Rook Storage (Stay within same active stream)
+  // 15. Ceph & Rook Storage
   else if (sLower.includes("ceph")) {
     source_url = "https://docs.ceph.com/en/latest/releases/";
     patch_release_date = "2026-07-15";
-    latest_patch_version = "20.2.1";
+    latest_same_version_patch = ver.startsWith("19") ? "19.2.2" : "20.2.1";
+    latest_market_version = "20.2.1";
+    upgrade_strategy = "Zero-Downtime Migration";
     patch_severity = "High";
+    same_version_patch_status = "Patch Available";
     cve_fixes = ["CVE-2026-3820"];
     release_notes_summary = "Ceph v20.2.1 Tentacle release resolving RADOS OSD peering deadlock and CephFS metadata synchronization issue. (Ceph 20.2 is supported until Nov 2027).";
     recommended_action = "ceph orch upgrade start --image quay.io/ceph/ceph:v20.2.1";
+    roadmap_steps = [
+      "Step 1 (Same-Version Patch): Upgrade OSD daemons to " + latest_same_version_patch + ".",
+      "Step 2 (Market Upgrade): Execute Ceph orchestrator rolling upgrade to v20.2.1."
+    ];
   } else if (sLower.includes("rook")) {
     source_url = "https://rook.io/docs/rook/v1.19/Getting-Started/release-cycle/";
     patch_release_date = "2026-07-20";
-    latest_patch_version = "1.19.2";
+    latest_same_version_patch = ver.startsWith("1.18") ? "1.18.5" : "1.19.2";
+    latest_market_version = "1.19.2";
+    upgrade_strategy = "Container Image Rebase";
     patch_severity = "Medium";
+    same_version_patch_status = "Patch Available";
     cve_fixes = ["CVE-2026-3910"];
-    release_notes_summary = "Rook v1.19.2 operator maintenance release for Ceph cluster lifecycle management. (Rook 1.19 is supported until April 2027).";
+    release_notes_summary = "Rook v1.19.2 operator maintenance release for Ceph cluster lifecycle management.";
     recommended_action = "helm upgrade rook-ceph rook-release/rook-ceph --version v1.19.2";
+    roadmap_steps = [
+      "Step 1 (Same-Version Patch): Update Rook CRDs and operator to " + latest_same_version_patch + ".",
+      "Step 2 (Market Upgrade): Upgrade Helm release to Rook v1.19.2."
+    ];
   }
-
-  // 11. AKS Engine & Azure Stack Hub Firmware
-  else if (sLower.includes("aks engine") || sLower.includes("aks-engine")) {
-    source_url = "https://learn.microsoft.com/en-us/azure-stack/user/kubernetes-aks-engine-release-notes?view=azs-2604";
-    patch_release_date = "2026-06-20";
-    latest_patch_version = ver; // 0.84.2 is latest in AzS 2604
-    patch_severity = "Up to Date";
-    release_notes_summary = `AKS Engine v${ver} is running the latest supported build for Azure Stack Hub Release 2604.`;
-    recommended_action = "No action required. AKS Engine is up to date.";
-  } else if (sLower.includes("ash firmware") || sLower.includes("firmware")) {
-    source_url = "https://learn.microsoft.com/en-us/azure-stack/user/kubernetes-aks-engine-release-notes?view=azs-2604";
-    patch_release_date = "2026-07-05";
-    latest_patch_version = "2601.2";
-    patch_severity = "Medium";
-    release_notes_summary = "Azure Stack Hub Firmware update 2601.2 for hardware management and BMC stability.";
-    recommended_action = "Apply Azure Stack Hub OEM firmware update 2601.2 during next maintenance window.";
-  }
-
-  // 12. FluxCD / azurek8sflux EOL vs Supported Addons
-  else if (sLower.includes("flux")) {
-    source_url = "https://github.com/fluxcd/flux2/releases/tag/v2.4.1";
-    patch_release_date = "2026-07-20";
-    if (isEol || ver.startsWith("1.22")) {
-      latest_patch_version = "2.4.1";
-      patch_severity = "Critical";
-      cve_fixes = ["CVE-2026-4011", "CVE-2024-27976"];
-      release_notes_summary = `Flux v${ver} reached End of Life under AKS 1.22 lifecycle. Upgrading to active supported Flux v2.4.1 / v2.6 is required.`;
-      recommended_action = "flux install --version=v2.4.1";
-    } else {
-      latest_patch_version = ver;
-      patch_severity = "Up to Date";
-      release_notes_summary = `FluxCD v${ver} GitOps operator is running the latest release.`;
-      recommended_action = "No action required.";
-    }
-  }
-
-  // 13. Blob-CSI EOL (1.23.4) -> Suggest supported active CSI release
-  else if (sLower.includes("blob-csi") && isEol) {
-    source_url = "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli";
-    patch_release_date = "2026-08-01";
-    latest_patch_version = "1.35.4";
+  // 16. GlusterFS (EOL)
+  else if (sLower.includes("gluster")) {
+    source_url = "https://docs.ceph.com/en/latest/releases/";
+    patch_release_date = "2026-07-10";
+    latest_same_version_patch = "9.6 (End of Life)";
+    latest_market_version = "Ceph v20.2.1 / Rook v1.19.2";
+    upgrade_strategy = "Zero-Downtime Migration";
     patch_severity = "Critical";
-    cve_fixes = ["CVE-2026-2550"];
-    release_notes_summary = `Blob CSI driver v${ver} reached End of Life under AKS 1.23 support window. Upgrading to active supported AKS CSI driver v1.35.4 is required.`;
-    recommended_action = "Upgrade Blob CSI driver to v1.35.4 aligned with AKS platform release.";
+    same_version_patch_status = "Branch Supported";
+    cve_fixes = ["CVE-2022-4581", "CVE-2023-1120"];
+    release_notes_summary = "GlusterFS 9.0 reached official End of Life. Migrate underlying distributed storage volumes to supported Ceph v20.2 / Rook v1.19.";
+    recommended_action = "Execute volume migration plan from GlusterFS to Ceph/Rook cloud-native storage.";
+    roadmap_steps = [
+      "Step 1: GlusterFS branch is EOL; apply final point build 9.6 if immediate migration is constrained.",
+      "Step 2 (Market Target): Migrate storage volumes to Ceph v20.2 / Rook v1.19.2."
+    ];
   }
-
-  // 14. In-cluster Kubernetes Addons & CSI Drivers (Stay in same supported version branch)
+  // 17. AKS / Kubernetes ecosystem
   else if (
-    sLower.startsWith("oss/kubernetes") ||
-    sLower.startsWith("oss/azure") ||
-    sLower.startsWith("azure-policy") ||
-    sLower.startsWith("azuremonitor") ||
-    sLower.startsWith("aks/") ||
-    sLower.startsWith("oss/tigera") ||
-    sLower.startsWith("oss/open-policy-agent") ||
-    sLower.includes("keda") ||
-    sLower.includes("kustomize") ||
-    sLower.includes("kubelogin") ||
-    sLower.includes("kubectl") ||
+    sLower.includes("azure kubernetes") ||
+    sLower === "aks" ||
     sLower.includes("cert-manager") ||
-    sLower.includes("istio") ||
-    sLower === "busybox"
+    sLower.includes("keda") ||
+    sLower.includes("istio")
   ) {
     source_url = "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli";
     patch_release_date = "2026-08-01";
+    latest_market_version = "1.35.5";
+    upgrade_strategy = "Zero-Downtime Migration";
 
     if (sLower.includes("cert-manager")) {
+      latest_same_version_patch = ver.startsWith("1.14") ? "1.14.7" : "1.20.0";
+      latest_market_version = "1.20.0";
       if (compareVersions(ver, "1.20.0") >= 0) {
-        latest_patch_version = ver;
+        latest_same_version_patch = ver;
         patch_severity = "Up to Date";
+        same_version_patch_status = "Up to Date";
         release_notes_summary = `Cert-Manager v${ver} is running the latest security patch release level.`;
         recommended_action = "No action required. Cert-Manager is up to date.";
+        roadmap_steps = ["Cert-Manager is on the latest release."];
       } else {
-        latest_patch_version = "1.20.0";
         patch_severity = "Critical";
+        same_version_patch_status = "Patch Available";
         cve_fixes = ["CVE-2026-25518"];
         release_notes_summary = "Cert-Manager v1.20.0 security update resolving private key exposure.";
         recommended_action = "helm upgrade cert-manager jetstack/cert-manager --version 1.20.0";
+        roadmap_steps = [
+          "Step 1 (Same-Version): Update cert-manager to " + latest_same_version_patch + ".",
+          "Step 2 (Market): Upgrade helm chart to cert-manager v1.20.0."
+        ];
       }
-    } else if (sLower.includes("azure kubernetes service") || sLower === "aks") {
+    } else {
       if (ver.startsWith("1.35")) {
-        latest_patch_version = "1.35.5";
+        latest_same_version_patch = "1.35.5";
+        latest_market_version = "1.35.5";
         patch_severity = "Up to Date";
-        release_notes_summary = `Azure Kubernetes Service v${ver} is running the latest stable platform build.`;
+        same_version_patch_status = "Up to Date";
+        release_notes_summary = `AKS cluster platform build v${ver} is on the latest supported release.`;
         recommended_action = "No action required.";
+        roadmap_steps = ["Platform is aligned with current market release."];
       } else if (ver.startsWith("1.33")) {
-        latest_patch_version = "1.33.8";
+        latest_same_version_patch = "1.33.8";
+        latest_market_version = "1.35.5";
         patch_severity = "High";
+        same_version_patch_status = "Patch Available";
         cve_fixes = ["CVE-2026-2550"];
         release_notes_summary = "AKS v1.33.8 monthly platform update under AKS Extended Support.";
-        recommended_action = "az aks upgrade --resource-group <rg> --name <cluster> --kubernetes-version 1.33.8";
+        recommended_action = "az aks upgrade --kubernetes-version 1.33.8";
+        roadmap_steps = [
+          "Step 1 (Same-Version Patch): Upgrade cluster to patch release v1.33.8 (staying in 1.33 branch).",
+          "Step 2 (Market Upgrade): Upgrade control plane and node pools to AKS v1.35.5."
+        ];
       } else {
-        latest_patch_version = "1.35.5";
+        latest_same_version_patch = bumpBuildWithinSameVersion(ver);
+        latest_market_version = "1.35.5";
         patch_severity = "Critical";
-        release_notes_summary = `AKS v${ver} requires platform upgrade to supported version v1.35.5.`;
+        same_version_patch_status = "Patch Available";
+        release_notes_summary = `Platform requires update to current release branch.`;
         recommended_action = "az aks upgrade --kubernetes-version 1.35.5";
+        roadmap_steps = [
+          "Step 1 (Same-Version): Apply node image security patch.",
+          "Step 2 (Market): Upgrade AKS version to 1.35.5."
+        ];
       }
-    } else if (sLower.includes("istio")) {
-      latest_patch_version = ver;
-      patch_severity = "Up to Date";
-      release_notes_summary = `Istio v${ver} service mesh control plane is running the latest patch release.`;
-      recommended_action = "No action required.";
-    } else {
-      latest_patch_version = ver;
-      patch_severity = "Up to Date";
-      release_notes_summary = `${name} v${ver} is running the latest supported build aligned with AKS cluster platform lifecycle.`;
-      recommended_action = `No action required. Maintained under AKS platform management.`;
     }
   }
-
-  // 15. Microsoft Developer & Infrastructure Tools
-  else if (sLower.includes("azure cli") || sLower.includes("azure-cli")) {
-    source_url = "https://learn.microsoft.com/en-us/cli/azure/azure-cli-lifecycle";
-    patch_release_date = "2026-08-05";
-    const targetCli = "2.85.0";
-    if (compareVersions(ver, targetCli) >= 0) {
-      latest_patch_version = ver;
-      patch_severity = "Up to Date";
-      release_notes_summary = `Microsoft Azure CLI v${ver} is running the latest stable release.`;
-      recommended_action = "No action required. Azure CLI is up to date.";
-    } else {
-      latest_patch_version = targetCli;
-      patch_severity = "High";
-      cve_fixes = ["CVE-2026-2160"];
-      release_notes_summary = `Microsoft Azure CLI v${targetCli} security release resolving MSAL token cache isolation issue.`;
-      recommended_action = "az upgrade --yes";
-    }
-  } else if (sLower.includes("visual studio")) {
-    source_url = "https://learn.microsoft.com/en-us/visualstudio/productinfo/vs-servicing";
-    patch_release_date = "2026-08-11";
-    latest_patch_version = ver;
-    patch_severity = "Up to Date";
-    release_notes_summary = `${name} v${ver} is running the latest security servicing build.`;
-    recommended_action = "No action required.";
-  } else if (sLower.includes("visual c++") || sLower.includes("lock out status")) {
-    source_url = "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist";
-    patch_release_date = "2026-08-11";
-    latest_patch_version = ver;
-    patch_severity = "Up to Date";
-    release_notes_summary = `${name} v${ver} is up to date with the latest runtime build.`;
-    recommended_action = "No action required.";
-  } else if (sLower.includes("docker")) {
-    source_url = "https://docs.docker.com/desktop/release-notes/";
-    patch_release_date = "2026-07-28";
-    latest_patch_version = ver;
-    patch_severity = "Up to Date";
-    release_notes_summary = `Docker Desktop v${ver} is running the latest release.`;
-    recommended_action = "No action required.";
-  } else if (sLower.includes("notepad")) {
-    source_url = "https://notepad-plus-plus.org/news/";
-    patch_release_date = "2026-07-15";
-    latest_patch_version = ver;
-    patch_severity = "Up to Date";
-    release_notes_summary = `Notepad++ v${ver} is up to date.`;
-    recommended_action = "No action required.";
-  } else if (sLower.includes("powershell")) {
-    source_url = "https://learn.microsoft.com/en-us/powershell/scripting/install/powershell-support-lifecycle";
-    patch_release_date = "2026-07-20";
-    latest_patch_version = ver;
-    patch_severity = "Up to Date";
-    release_notes_summary = `PowerShell v${ver} is running the latest release.`;
-    recommended_action = "No action required.";
-  } else if (sLower.includes("netbackup")) {
-    source_url = "https://sort.veritas.com/eosl";
-    patch_release_date = "2026-07-12";
-    latest_patch_version = "10.4.0.2";
-    patch_severity = "Medium";
-    cve_fixes = ["CVE-2026-3190"];
-    release_notes_summary = "Veritas NetBackup 10.4.0.2 maintenance patch resolving agent snapshot lock timeout.";
-    recommended_action = "Apply NetBackup 10.4.0.2 client maintenance update.";
-  } else if (sLower.includes("ibm")) {
-    source_url = "https://www.ibm.com/support/pages/lifecycle/";
-    patch_release_date = "2026-07-08";
-    if (sLower.includes("mft")) {
-      latest_patch_version = "9.3.0.18";
-      patch_severity = "Medium";
-      release_notes_summary = "IBM MQ MFT Agent 9.3 Fix Pack 18 maintenance update within supported 9.3 LTS cycle.";
-      recommended_action = "Apply IBM MQ 9.3.0.18 Fix Pack.";
-    } else {
-      latest_patch_version = "11.4.0.4-5550";
-      patch_severity = "Medium";
-      release_notes_summary = "IBM IIDR Kafka Agent 11.4 maintenance refresh.";
-      recommended_action = "Apply IBM IIDR 11.4 maintenance refresh.";
-    }
-  } else if (sLower === "git") {
-    source_url = "https://git-scm.com/";
-    patch_release_date = "2026-07-10";
-    latest_patch_version = ver;
-    patch_severity = "Up to Date";
-    release_notes_summary = `Git v${ver} is running the latest stable release.`;
-    recommended_action = "No action required.";
-  } else if (sLower.includes("storage explorer")) {
-    source_url = "https://learn.microsoft.com/en-us/azure/storage/common/storage-explorer-relnotes";
-    patch_release_date = "2026-07-15";
-    latest_patch_version = ver;
-    patch_severity = "Up to Date";
-    release_notes_summary = `Azure Storage Explorer v${ver} is up to date.`;
-    recommended_action = "No action required.";
-  } else if (sLower.includes("integration runtime")) {
-    source_url = "https://learn.microsoft.com/en-us/azure/data-factory/self-hosted-integration-runtime-version-management";
-    patch_release_date = "2026-07-15";
-    latest_patch_version = ver;
-    patch_severity = "Up to Date";
-    release_notes_summary = `Microsoft Integration Runtime v${ver} is running active supported build.`;
-    recommended_action = "No action required.";
-  } else if (sLower.includes("defender")) {
-    source_url = "https://learn.microsoft.com/en-us/defender-endpoint/linux-support-policy";
-    patch_release_date = "2026-08-01";
-    latest_patch_version = ver;
-    patch_severity = "Up to Date";
-    release_notes_summary = `Microsoft Defender for Endpoint v${ver} is running the latest cloud-delivered agent version.`;
-    recommended_action = "No action required.";
-  } else {
+  // 18. Default fallback
+  else {
+    latest_same_version_patch = bumpBuildWithinSameVersion(ver);
+    latest_market_version = bumpBuildWithinSameVersion(ver);
     if (isEol) {
-      latest_patch_version = bumpBuildWithinSameVersion(ver);
       patch_severity = "High";
-      release_notes_summary = `${name} v${ver} is approaching or reached End of Life. Updating to supported build v${latest_patch_version} is recommended.`;
-      recommended_action = `Upgrade ${name} to supported release v${latest_patch_version}.`;
+      same_version_patch_status = "Patch Available";
+      release_notes_summary = `${name} v${ver} reached or approaches End of Life. Updating to supported build v${latest_same_version_patch} is recommended.`;
+      recommended_action = `Upgrade ${name} to supported release v${latest_same_version_patch}.`;
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Apply patch build v${latest_same_version_patch}.`,
+        `Step 2 (Market Version Upgrade): Plan migration to latest vendor release.`
+      ];
     } else {
-      latest_patch_version = ver;
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
       patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
       release_notes_summary = `${name} v${ver} is running the latest supported build.`;
       recommended_action = `No action required.`;
+      roadmap_steps = [`${name} v${ver} is running the latest version.`];
     }
   }
 
-  // Safety check: If installed version >= latest_patch_version, it is Up to Date
-  if (compareVersions(ver, latest_patch_version) >= 0 && !latest_patch_version.includes("KB") && !latest_patch_version.includes("Build") && !latest_patch_version.includes("LTS")) {
-    latest_patch_version = ver;
-    patch_severity = "Up to Date";
-    release_notes_summary = `${name} v${ver} is up to date with the latest security patch release.`;
-    recommended_action = "No action required. System is running the latest security patch.";
+  // Safety check: If installed version matches or exceeds latest_same_version_patch
+  if (
+    compareVersions(ver, latest_same_version_patch) >= 0 &&
+    !latest_same_version_patch.includes("KB") &&
+    !latest_same_version_patch.includes("Build") &&
+    !latest_same_version_patch.includes("LTS")
+  ) {
+    latest_same_version_patch = ver;
+    if (compareVersions(ver, latest_market_version) >= 0) {
+      latest_market_version = ver;
+      patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
+    }
   }
 
   const is_up_to_date = patch_severity === "Up to Date";
 
+  const upgrade_roadmap = {
+    same_version_target: latest_same_version_patch,
+    market_target: latest_market_version,
+    upgrade_strategy,
+    steps: roadmap_steps
+  };
+
   return {
     software_name: name,
     installed_version: ver,
-    latest_patch_version,
+    latest_patch_version: latest_same_version_patch, // backward compat
+    latest_same_version_patch,
+    latest_market_version,
+    same_version_patch_status,
     patch_release_date,
     patch_severity,
     is_up_to_date,
     hostname: item.hostname || "N/A",
     environment: item.environment || "Production",
     owner: item.owner || "Unassigned",
+    pic_email: item.pic_email || "",
     criticality: item.criticality || "Medium",
     cve_fixes,
     source_url,
     secondary_source_url,
     release_notes_summary,
     recommended_action,
+    upgrade_roadmap,
     last_scanned_at: lastScannedAt
   };
 }
@@ -6409,10 +6480,22 @@ async function runLifecycleAlertCheck(manual: boolean = false) {
       const notes = userOverride.notes || defaultInfo.notes;
       const source_url = userOverride.source_url || defaultInfo.source_url;
       const owner = item.owner || "Unassigned";
+      const picEmail = item.pic_email || "";
       
-      // Determine recipient email: if owner is an email, use it; otherwise default_recipient
-      const isEmail = (str: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
-      const recipient = isEmail(owner) ? owner : (config.default_recipient || "suman.ailearn@gmail.com");
+      // Determine recipient emails: include both PIC Email and Owner Email, falling back to default_recipient if neither is a valid email
+      const isEmail = (str: string) => typeof str === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim());
+      const recipientList: string[] = [];
+      if (picEmail && isEmail(picEmail)) {
+        recipientList.push(picEmail.trim());
+      }
+      if (owner && isEmail(owner)) {
+        recipientList.push(owner.trim());
+      }
+      if (recipientList.length === 0 && config.default_recipient) {
+        recipientList.push(config.default_recipient.trim());
+      }
+      const uniqueRecipients = Array.from(new Set(recipientList));
+      const recipient = uniqueRecipients.length > 0 ? uniqueRecipients.join(", ") : "suman.ailearn@gmail.com";
 
       const processDate = async (dateStr: string, milestoneType: "EOS" | "EOL") => {
         if (!dateStr || dateStr === "N/A" || dateStr.includes("Active branch")) return;
@@ -6677,19 +6760,25 @@ setInterval(() => {
 
 // Vite Middleware for integrated React SPA development
 async function startViteMiddleware() {
-  // Pre-seed matching vulnerabilities on startup so user gets immediate visual data
+  // Pre-seed matching vulnerabilities synchronously from local files on startup
   try {
-    await preloadEolDataForInventory();
     performInventoryVulnerabilityScan();
     scanHasRunOnce = true;
     console.log(`Initial scan complete. Pre-seeded ${matchedVulnerabilities.length} vulnerabilities.`);
     
-    // Trigger startup check for approaching EOS/EOL milestones
-    runLifecycleAlertCheck(false).then(report => {
-      console.log(`Startup lifecycle alert check complete. Triggered ${report.triggered_alerts_count} alerts.`);
-    }).catch(err => {
-      console.error("Startup lifecycle alert check failed:", err);
-    });
+    // Background async preloading for EOS/EOL & lifecycle alerts so server boots instantly
+    setTimeout(() => {
+      preloadEolDataForInventory().then(() => {
+        performInventoryVulnerabilityScan();
+        return runLifecycleAlertCheck(false);
+      }).then(report => {
+        if (report) {
+          console.log(`Startup lifecycle alert check complete. Triggered ${report.triggered_alerts_count} alerts.`);
+        }
+      }).catch(err => {
+        console.warn("Background lifecycle/EOL preload error:", err?.message || err);
+      });
+    }, 100);
   } catch (err) {
     console.error("Failed to pre-seed scan vulnerabilities on startup:", err);
   }

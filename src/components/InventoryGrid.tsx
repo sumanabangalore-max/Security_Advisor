@@ -37,6 +37,7 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
   const [formHostname, setFormHostname] = useState("");
   const [formIpAddress, setFormIpAddress] = useState("");
   const [formOwner, setFormOwner] = useState("");
+  const [formPicEmail, setFormPicEmail] = useState("");
   const [formCriticality, setFormCriticality] = useState("Medium");
   const [formCpeUri, setFormCpeUri] = useState("");
 
@@ -57,6 +58,7 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
     hostname: 140,
     ip_address: 130,
     owner: 120,
+    pic_email: 180,
     criticality: 110,
     status: 120,
     eol_date: 120
@@ -191,6 +193,7 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
         hostname: formHostname,
         ip_address: formIpAddress,
         owner: formOwner,
+        pic_email: formPicEmail,
         criticality: formCriticality,
         cpe_uri: formCpeUri
       };
@@ -215,6 +218,7 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
       setFormHostname("");
       setFormIpAddress("");
       setFormOwner("");
+      setFormPicEmail("");
       setFormCpeUri("");
       setIncludeLifecycle(false);
 
@@ -293,6 +297,7 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
     setFormHostname(item.hostname || "");
     setFormIpAddress(item.ip_address || "");
     setFormOwner(item.owner || "");
+    setFormPicEmail(item.pic_email || "");
     setFormCriticality(item.criticality || "Medium");
     setFormCpeUri(item.cpe_uri || "");
   };
@@ -316,6 +321,7 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
         hostname: formHostname,
         ip_address: formIpAddress,
         owner: formOwner,
+        pic_email: formPicEmail,
         criticality: formCriticality,
         cpe_uri: formCpeUri
       });
@@ -519,6 +525,7 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
                 {renderSortHeader("version", "Version")}
                 {renderSortHeader("hostname", "Host / Address")}
                 {renderSortHeader("owner", "Owner")}
+                {renderSortHeader("pic_email", "PIC Email")}
                 {renderSortHeader("cpe_uri", "CPE Name")}
                 {renderSortHeader("environment", "Environment")}
                 {renderSortHeader("criticality", "Criticality")}
@@ -540,6 +547,19 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
                     <div className="text-[10px] text-slate-500 font-mono">{item.ip_address || "N/A"}</div>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{item.owner || "Unassigned"}</td>
+                  <td className="px-4 py-3 font-mono text-[11px]">
+                    {item.pic_email ? (
+                      <a 
+                        href={`mailto:${item.pic_email}`} 
+                        className="text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 font-mono text-[11px]"
+                        title="Alert recipient for patches & vulnerabilities"
+                      >
+                        {item.pic_email}
+                      </a>
+                    ) : (
+                      <span className="text-slate-400 italic font-sans text-[10px]">Unassigned</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-mono text-[10px] text-slate-500 max-w-[150px] truncate" title={item.cpe_uri}>
                     {item.cpe_uri || "N/A"}
                   </td>
@@ -685,6 +705,21 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
                     className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center justify-between">
+                    <span>PIC Email</span>
+                    <span className="text-[9px] text-indigo-600 font-semibold uppercase">Alerts Target</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="pic.team@company.com"
+                    value={formPicEmail}
+                    onChange={(e) => setFormPicEmail(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center justify-between">
                   <span>Common Platform Enumeration (CPE Name) <span className="text-red-600 font-bold">*</span></span>
@@ -701,7 +736,6 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
                 <p className="text-[10px] text-slate-500 italic">
                   Critical information: CPE identifier is mandatory to fetch security patches, vulnerabilities (CVEs), and EOS/EOL metrics.
                 </p>
-              </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
@@ -832,7 +866,7 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700">Owner / Custodian</label>
                   <input
@@ -845,21 +879,35 @@ export default function InventoryGrid({ userRole, refreshTrigger, onInventoryUpd
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center justify-between">
-                    <span>CPE Name (Common Platform Enumeration) <span className="text-red-600 font-bold">*</span></span>
-                    <span className="text-[10px] text-red-600 font-bold uppercase tracking-wider">Mandatory</span>
+                    <span>PIC Email</span>
+                    <span className="text-[9px] text-indigo-600 font-semibold uppercase">Alerts Target</span>
                   </label>
                   <input
-                    type="text"
-                    required
-                    placeholder="e.g. cpe:2.3:a:apache:tomcat:9.0.52:*:*:*:*:*:*:*"
-                    value={formCpeUri}
-                    onChange={(e) => setFormCpeUri(e.target.value)}
-                    className="w-full bg-white border border-red-300 focus:border-emerald-500 rounded-lg p-2 text-xs text-slate-900 font-mono focus:ring-2 focus:ring-emerald-500"
+                    type="email"
+                    placeholder="e.g. pic.team@company.com"
+                    value={formPicEmail}
+                    onChange={(e) => setFormPicEmail(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
                   />
-                  <p className="text-[10px] text-slate-500 italic">
-                    Critical information: CPE identifier is mandatory to fetch security patches, vulnerabilities (CVEs), and EOS/EOL notices.
-                  </p>
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center justify-between">
+                  <span>CPE Name (Common Platform Enumeration) <span className="text-red-600 font-bold">*</span></span>
+                  <span className="text-[10px] text-red-600 font-bold uppercase tracking-wider">Mandatory</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. cpe:2.3:a:apache:tomcat:9.0.52:*:*:*:*:*:*:*"
+                  value={formCpeUri}
+                  onChange={(e) => setFormCpeUri(e.target.value)}
+                  className="w-full bg-white border border-red-300 focus:border-emerald-500 rounded-lg p-2 text-xs text-slate-900 font-mono focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-[10px] text-slate-500 italic">
+                  Critical information: CPE identifier is mandatory to fetch security patches, vulnerabilities (CVEs), and EOS/EOL notices.
+                </p>
               </div>
 
               {/* Lifecycle Options Section */}

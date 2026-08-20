@@ -43,6 +43,7 @@ export interface InventoryItem {
   hostname?: string;
   ip_address?: string;
   owner?: string;
+  pic_email?: string;
   criticality?: string;
   cpe_uri?: string;
 }
@@ -95,6 +96,7 @@ export interface Vulnerability {
   hostname?: string;
   ip_address?: string;
   owner?: string;
+  pic_email?: string;
   criticality?: string;
   // CISA KEV (Known Exploited Vulnerabilities) Integration
   cisa_kev?: boolean;
@@ -133,6 +135,14 @@ export interface EosEolRecord {
   notes: string;
   source_checking?: string;
   owner?: string;
+  pic_email?: string;
+}
+
+export interface UpgradeRoadmap {
+  same_version_target: string;
+  market_target: string;
+  upgrade_strategy: "In-Place Cumulative Rollup" | "Major Release Upgrade" | "Container Image Rebase" | "Zero-Downtime Migration";
+  steps: string[];
 }
 
 export interface PatchItem {
@@ -140,18 +150,23 @@ export interface PatchItem {
   software_name: string;
   installed_version: string;
   latest_patch_version: string;
+  latest_same_version_patch: string;
+  latest_market_version: string;
+  same_version_patch_status: "Up to Date" | "Patch Available" | "Branch Supported";
   patch_release_date: string;
   patch_severity: "Critical" | "High" | "Medium" | "Low" | "Up to Date";
   is_up_to_date: boolean;
   hostname: string;
   environment: string;
   owner: string;
+  pic_email?: string;
   criticality: string;
   cve_fixes: string[];
   source_url: string;
   secondary_source_url?: string;
   release_notes_summary: string;
   recommended_action: string;
+  upgrade_roadmap?: UpgradeRoadmap;
   last_scanned_at: string;
 }
 

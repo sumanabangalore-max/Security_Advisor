@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { ShieldAlert, Flame, Terminal, Play, CheckCircle2, ChevronDown, ChevronUp, AlertTriangle, Cpu, HelpCircle, ShieldCheck } from "lucide-react";
+import { 
+  ShieldAlert, Flame, Terminal, Play, CheckCircle2, ChevronDown, 
+  ChevronUp, AlertTriangle, Cpu, HelpCircle, ShieldCheck, Copy, Check, Server, Layers, Mail
+} from "lucide-react";
 import { api } from "../api";
-import { Vulnerability, UserRole } from "../types";
+import { Vulnerability, UserRole, InventoryItem } from "../types";
 
 interface ZeroDayAlertPanelProps {
   userRole: UserRole;
@@ -12,8 +15,10 @@ interface ZeroDayAlertPanelProps {
 
 export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched, onDeployAgent }: ZeroDayAlertPanelProps) {
   const [zeroDays, setZeroDays] = useState<Vulnerability[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedVuln, setExpandedVuln] = useState<number | null>(null);
+  const [copiedCve, setCopiedCve] = useState<string | null>(null);
 
   // States for live patching simulation per vulnerability
   const [patching, setPatching] = useState<Record<number, boolean>>({});
@@ -24,7 +29,17 @@ export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched,
 
   useEffect(() => {
     fetchZeroDays();
+    fetchInventory();
   }, [refreshTrigger]);
+
+  const fetchInventory = async () => {
+    try {
+      const data = await api.get<InventoryItem[]>("/api/v1/inventory");
+      setInventoryItems(data || []);
+    } catch {
+      // silent
+    }
+  };
 
   const fetchZeroDays = async () => {
     try {
@@ -41,6 +56,13 @@ export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched,
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopyCve = (cveId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(cveId);
+    setCopiedCve(cveId);
+    setTimeout(() => setCopiedCve(null), 2000);
   };
 
   const handleRunPatchAgent = async (v: Vulnerability) => {
@@ -130,6 +152,14 @@ export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched,
           const isSuccess = patchSuccess[v.id];
           const logs = patchLogs[v.id] || [];
 
+          // Find all impacted CIs in inventory
+          const matchingCIs = inventoryItems.filter(item => {
+            const matchName = item.software_name?.toLowerCase() === v.software_name?.toLowerCase();
+            const matchHost = v.hostname && item.hostname === v.hostname;
+            const matchCpe = v.affected_cpe && item.cpe_uri && (item.cpe_uri.includes(v.software_name.toLowerCase()) || v.affected_cpe === item.cpe_uri);
+            return matchName || matchHost || matchCpe;
+          });
+
           return (
             <div 
               key={v.id} 
@@ -141,19 +171,36 @@ export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched,
             >
               {/* Header */}
               <div 
-                className="flex items-center justify-between p-3.5 cursor-pointer select-none"
+                className="flex items-center justify-between p-3.5 cursor-pointer select-text"
                 onClick={() => setExpandedVuln(isExpanded ? null : v.id)}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-xs font-mono font-bold text-red-600 shrink-0">
-                    {v.cve_id}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-xs font-mono font-bold text-red-600 select-text cursor-text">
+                      {v.cve_id}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopyCve(v.cve_id, e)}
+                      className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-700 transition-colors cursor-pointer"
+                      title="Copy CVE ID"
+                    >
+                      {copiedCve === v.cve_id ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                   <div className="h-3.5 w-px bg-slate-200 shrink-0" />
                   <span className="text-xs font-bold text-slate-900 truncate">
                     {v.software_name} v{v.version}
                   </span>
                   <span className="text-[10px] font-mono text-slate-600 uppercase px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200">
                     {v.environment}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200 hidden sm:inline-block">
+                    Host: {v.hostname}
                   </span>
                 </div>
 
@@ -171,7 +218,7 @@ export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched,
 
               {/* Collapsible details */}
               {isExpanded && (
-                <div className="border-t border-slate-100 p-4 space-y-4 text-xs">
+                <div className="border-t border-slate-100 p-4 space-y-4 text-xs select-text">
                   {/* Recommended Upgrade Target Banner */}
                   <div className="rounded-xl border border-emerald-300 bg-emerald-50/90 p-3.5 space-y-1 shadow-xs">
                     <div className="flex items-center gap-2 text-emerald-950 font-extrabold text-xs uppercase tracking-wider">
@@ -184,6 +231,111 @@ export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched,
                     </p>
                   </div>
 
+                  {/* Impacted Configuration Items (CIs) Section */}
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-3.5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Server className="h-4 w-4 text-amber-600" />
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                          Impacted Configuration Items (CIs / Assets)
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200">
+                        {matchingCIs.length > 0 ? `${matchingCIs.length} CI${matchingCIs.length > 1 ? "s" : ""} Bound` : "1 Primary CI Instance"}
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                            <th className="px-3 py-2">CI Hostname</th>
+                            <th className="px-3 py-2">IP Address</th>
+                            <th className="px-3 py-2">Environment</th>
+                            <th className="px-3 py-2">Software & Version</th>
+                            <th className="px-3 py-2">Owner / Custodian</th>
+                            <th className="px-3 py-2">PIC Email</th>
+                            <th className="px-3 py-2 text-right">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-[11px]">
+                          {matchingCIs.length > 0 ? (
+                            matchingCIs.map((ci) => (
+                              <tr key={ci.id} className="hover:bg-slate-50/80">
+                                <td className="px-3 py-2 font-mono font-bold text-slate-900 flex items-center gap-1.5">
+                                  <Server className="h-3 w-3 text-slate-400 shrink-0" />
+                                  {ci.hostname || v.hostname}
+                                </td>
+                                <td className="px-3 py-2 font-mono text-slate-600">{ci.ip_address || v.ip_address}</td>
+                                <td className="px-3 py-2">
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">
+                                    {ci.environment || v.environment}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 font-medium text-slate-800">
+                                  {ci.software_name} <span className="font-mono text-slate-500 font-normal">v{ci.version}</span>
+                                </td>
+                                <td className="px-3 py-2 text-slate-600">{ci.owner || v.owner || "Security Ops"}</td>
+                                <td className="px-3 py-2 font-mono text-[10px]">
+                                  {ci.pic_email || v.pic_email ? (
+                                    <a 
+                                      href={`mailto:${ci.pic_email || v.pic_email}`} 
+                                      className="text-indigo-600 hover:underline flex items-center gap-1"
+                                    >
+                                      <Mail className="h-3 w-3 text-indigo-500" />
+                                      {ci.pic_email || v.pic_email}
+                                    </a>
+                                  ) : (
+                                    <span className="text-slate-400 italic font-sans">Unassigned</span>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase font-mono bg-red-50 text-red-700 border border-red-200">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />
+                                    Active Target
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr className="hover:bg-slate-50/80">
+                              <td className="px-3 py-2 font-mono font-bold text-slate-900 flex items-center gap-1.5">
+                                <Server className="h-3 w-3 text-slate-400 shrink-0" />
+                                {v.hostname}
+                              </td>
+                              <td className="px-3 py-2 font-mono text-slate-600">{v.ip_address}</td>
+                              <td className="px-3 py-2">
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">
+                                  {v.environment}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 font-medium text-slate-800">
+                                {v.software_name} <span className="font-mono text-slate-500 font-normal">v{v.version}</span>
+                              </td>
+                              <td className="px-3 py-2 text-slate-600">{v.owner || "Security Ops"}</td>
+                              <td className="px-3 py-2 font-mono text-[10px]">
+                                {v.pic_email ? (
+                                  <a href={`mailto:${v.pic_email}`} className="text-indigo-600 hover:underline flex items-center gap-1">
+                                    <Mail className="h-3 w-3 text-indigo-500" />
+                                    {v.pic_email}
+                                  </a>
+                                ) : (
+                                  <span className="text-slate-400 italic font-sans">Unassigned</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase font-mono bg-red-50 text-red-700 border border-red-200">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />
+                                  Active Target
+                                </span>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
                   {/* Summary & Impact */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
@@ -191,11 +343,11 @@ export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched,
                         <AlertTriangle className="h-3 w-3" />
                         Exploitation Intel
                       </span>
-                      <p className="text-slate-800 leading-relaxed font-medium">
+                      <p className="text-slate-800 leading-relaxed font-medium select-text">
                         {v.summary}
                       </p>
-                      <p className="text-slate-500 text-[11px] leading-relaxed">
-                        <strong>Affected CPE:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-[10px] text-slate-800">{v.affected_cpe}</code>
+                      <p className="text-slate-500 text-[11px] leading-relaxed select-text">
+                        <strong>Affected CPE:</strong> <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-[10px] text-slate-800 select-all">{v.affected_cpe}</code>
                       </p>
                     </div>
                     <div className="space-y-1.5 rounded-xl bg-red-50/50 border border-red-100 p-3">
@@ -203,7 +355,7 @@ export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched,
                         <Cpu className="h-3 w-3 text-red-600" />
                         Impact Analysis
                       </span>
-                      <p className="text-slate-700 text-[11px] leading-normal">
+                      <p className="text-slate-700 text-[11px] leading-normal select-text">
                         {v.impact_analysis || "Exploitation allows remote administrative bypass. Immediate memory disclosure or control hijack risk."}
                       </p>
                     </div>
@@ -215,7 +367,7 @@ export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched,
                       <Terminal className="h-3.5 w-3.5 text-slate-400" />
                       Immediate Technical Workaround Steps
                     </span>
-                    <div className="rounded-xl border border-slate-200 bg-slate-900 p-3.5 space-y-2 text-[11px] font-mono leading-relaxed text-slate-200">
+                    <div className="rounded-xl border border-slate-200 bg-slate-900 p-3.5 space-y-2 text-[11px] font-mono leading-relaxed text-slate-200 select-text">
                       <p className="text-amber-300 font-bold mb-1 uppercase tracking-wider text-[9px] flex items-center gap-1">
                         <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
                         Critical Workaround Directives
@@ -272,7 +424,7 @@ export default function ZeroDayAlertPanel({ userRole, refreshTrigger, onPatched,
 
                     {/* Scrolling terminal output */}
                     {(isPatching || logs.length > 0) && (
-                      <div className="rounded-xl border border-slate-800 bg-slate-900 p-3.5 space-y-1 font-mono text-[10px] text-slate-300 max-h-44 overflow-y-auto mt-2">
+                      <div className="rounded-xl border border-slate-800 bg-slate-900 p-3.5 space-y-1 font-mono text-[10px] text-slate-300 max-h-44 overflow-y-auto mt-2 select-text">
                         <div className="border-b border-slate-800 pb-1.5 mb-2 flex justify-between items-center">
                           <span className="text-slate-400 uppercase tracking-widest font-bold text-[8px] flex items-center gap-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping" />
