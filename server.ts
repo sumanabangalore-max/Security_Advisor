@@ -1860,9 +1860,28 @@ function generateDynamicCvesForSoftware(item: any, sources: any): any[] {
   return results;
 }
 
+function parseVersionTokens(v: string): number[] {
+  if (!v) return [0];
+  let cleaned = v.trim().replace(/^[vV][\.\-]?/, "");
+  // Separate out any metadata like KB, Build, etc. if attached
+  if (cleaned.includes("(")) {
+    cleaned = cleaned.split("(")[0].trim();
+  }
+  const tokens = cleaned.split(/[\.\-\_\+]/).map(segment => {
+    const num = parseInt(segment.replace(/[^0-9]/g, ""), 10);
+    return isNaN(num) ? 0 : num;
+  });
+  return tokens.length > 0 ? tokens : [0];
+}
+
 function compareVersions(v1: string, v2: string): number {
-  const p1 = v1.replace(/[^0-9.]/g, "").split(".").filter(Boolean).map(n => parseInt(n, 10) || 0);
-  const p2 = v2.replace(/[^0-9.]/g, "").split(".").filter(Boolean).map(n => parseInt(n, 10) || 0);
+  if (!v1 && !v2) return 0;
+  if (!v1) return -1;
+  if (!v2) return 1;
+  if (v1.trim() === v2.trim()) return 0;
+
+  const p1 = parseVersionTokens(v1);
+  const p2 = parseVersionTokens(v2);
   const len = Math.max(p1.length, p2.length);
   for (let i = 0; i < len; i++) {
     const n1 = p1[i] || 0;
@@ -1874,40 +1893,71 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 function bumpVersion(versionStr: string): string {
-  const parts = versionStr.split(".");
+  const trimmed = (versionStr || "1.0.0").trim();
+  const hasV = trimmed.startsWith("v") || trimmed.startsWith("V");
+  const prefix = hasV ? trimmed.charAt(0) : "";
+  const bare = trimmed.replace(/^[vV]/, "");
+
+  if (bare.includes("-")) {
+    const [baseVer, suffix] = bare.split("-");
+    const suffixNum = parseInt(suffix.replace(/[^0-9]/g, ""), 10);
+    if (!isNaN(suffixNum)) {
+      return `${prefix}${baseVer}-${suffixNum + 1}`;
+    }
+  }
+
+  const parts = bare.split(".");
   const numParts = parts.map(p => parseInt(p.replace(/[^0-9]/g, ""), 10));
 
   if (numParts.some(isNaN) || numParts.length === 0) {
-    return `${versionStr}-patched`;
+    return `${trimmed}-p1`;
   }
 
   if (numParts.length >= 4) {
     numParts[numParts.length - 1] += 1;
-    return numParts.join(".");
+    return `${prefix}${numParts.join(".")}`;
   } else if (numParts.length === 3) {
     numParts[2] += 1;
-    return numParts.join(".");
+    return `${prefix}${numParts.join(".")}`;
   } else if (numParts.length === 2) {
-    // Increment patch safely within same minor release (e.g. 1.16 -> 1.16.1)
-    return `${numParts[0]}.${numParts[1]}.1`;
+    return `${prefix}${numParts[0]}.${numParts[1]}.1`;
   } else {
-    return `${numParts[0]}.0.1`;
+    return `${prefix}${numParts[0]}.0.1`;
   }
 }
 
 function getCandidateFixedVersion(softwareName: string): string {
   const sLower = softwareName.toLowerCase();
-  if (sLower.includes("cert-manager")) return "1.18.5";
-  if (sLower.includes("flux")) return "2.4.1";
-  if (sLower.includes("chrome") || sLower.includes("chromium")) return "133.0.6943.126";
-  if (sLower.includes("istio")) return "1.24.1";
+  if (sLower.includes("cert-manager") || sLower.includes("certmanager")) return "1.21.0";
+  if (sLower.includes("keda")) return "2.17.4";
+  if (sLower.includes("secrets-store")) return "1.5.1";
+  if (sLower.includes("tigera")) return "1.38.1";
+  if (sLower.includes("gatekeeper")) return "3.19.0";
+  if (sLower.includes("livenessprobe")) return "2.16.0";
+  if (sLower.includes("csi-node-driver-registrar") || sLower.includes("node-driver-registrar")) return "2.15.0";
+  if (sLower.includes("blob-csi") || sLower.includes("azureblob-csi")) return "1.26.0";
+  if (sLower.includes("azurefile-csi")) return "1.32.0";
+  if (sLower.includes("azuredisk-csi")) return "1.32.0";
+  if (sLower.includes("metrics-server")) return "0.8.0";
+  if (sLower.includes("kube-proxy")) return "1.35.5";
+  if (sLower.includes("coredns")) return "1.12.0";
+  if (sLower.includes("azure-cloud-node-manager")) return "1.33.0";
+  if (sLower.includes("cluster-proportional-autoscaler")) return "1.9.0";
+  if (sLower.includes("addon-resizer")) return "1.8.20";
+  if (sLower.includes("source-controller")) return "1.5.0";
+  if (sLower.includes("notification-controller")) return "1.5.0";
+  if (sLower.includes("kustomize-controller")) return "1.5.0";
+  if (sLower.includes("helm-controller")) return "1.2.0";
+  if (sLower.includes("flux")) return "2.5.1";
+  if (sLower.includes("chrome") || sLower.includes("chromium")) return "150.0.7871.187";
+  if (sLower.includes("istio")) return "1.24.2";
   if (sLower.includes("apache") && !sLower.includes("tomcat")) return "2.4.62";
   if (sLower.includes("openssl")) return "3.0.15";
   if (sLower.includes("nginx")) return "1.26.2";
   if (sLower.includes("postgres")) return "16.4";
-  if (sLower.includes("node")) return "20.17.0";
+  if (sLower.includes("node") && !sLower.includes("manager")) return "20.17.0";
   if (sLower.includes("tomcat")) return "10.1.28";
-  if (sLower.includes("cisco")) return "17.9.4";
+  if (sLower.includes("cisco")) return "17.9.9a";
   if (sLower.includes("ubuntu")) return "24.04.1";
   return "";
 }
@@ -1921,17 +1971,74 @@ function computeFixRecommendation(softwareName: string, currentVersion: string):
   let candidateVersion = "";
   let imageTemplate = "";
 
-  if (sLower.includes("cert-manager")) {
-    candidateVersion = compareVersions(currentVersion, "1.18.5") >= 0 ? currentVersion : "1.18.5";
+  if (sLower.includes("cert-manager") || sLower.includes("certmanager")) {
+    candidateVersion = compareVersions(currentVersion, "1.21.0") >= 0 ? currentVersion : "1.21.0";
     imageTemplate = "quay.io/jetstack/cert-manager-controller";
+  } else if (sLower.includes("keda")) {
+    candidateVersion = compareVersions(currentVersion, "2.17.4") >= 0 ? currentVersion : "2.17.4";
+    imageTemplate = "ghcr.io/kedacore/keda";
+  } else if (sLower.includes("secrets-store")) {
+    candidateVersion = compareVersions(currentVersion, "1.5.1") >= 0 ? currentVersion : "1.5.1";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes-csi/secrets-store/driver";
+  } else if (sLower.includes("tigera")) {
+    candidateVersion = compareVersions(currentVersion, "1.38.1") >= 0 ? currentVersion : "1.38.1";
+    imageTemplate = "mcr.microsoft.com/oss/tigera/operator";
+  } else if (sLower.includes("gatekeeper")) {
+    candidateVersion = compareVersions(currentVersion, "3.19.0") >= 0 ? currentVersion : "3.19.0";
+    imageTemplate = "mcr.microsoft.com/oss/open-policy-agent/gatekeeper";
+  } else if (sLower.includes("livenessprobe")) {
+    candidateVersion = compareVersions(currentVersion, "2.16.0") >= 0 ? currentVersion : "2.16.0";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes-csi/livenessprobe";
+  } else if (sLower.includes("csi-node-driver-registrar") || sLower.includes("node-driver-registrar")) {
+    candidateVersion = compareVersions(currentVersion, "2.15.0") >= 0 ? currentVersion : "2.15.0";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes-csi/csi-node-driver-registrar";
+  } else if (sLower.includes("blob-csi") || sLower.includes("azureblob-csi")) {
+    candidateVersion = compareVersions(currentVersion, "1.26.0") >= 0 ? currentVersion : "1.26.0";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes-csi/blob-csi";
+  } else if (sLower.includes("azurefile-csi")) {
+    candidateVersion = compareVersions(currentVersion, "1.32.0") >= 0 ? currentVersion : "1.32.0";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes-csi/azurefile-csi";
+  } else if (sLower.includes("azuredisk-csi")) {
+    candidateVersion = compareVersions(currentVersion, "1.32.0") >= 0 ? currentVersion : "1.32.0";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes-csi/azuredisk-csi";
+  } else if (sLower.includes("metrics-server")) {
+    candidateVersion = compareVersions(currentVersion, "0.8.0") >= 0 ? currentVersion : "0.8.0";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes/metrics-server";
+  } else if (sLower.includes("kube-proxy")) {
+    candidateVersion = compareVersions(currentVersion, "1.35.5") >= 0 ? currentVersion : "1.35.5";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes/kube-proxy";
+  } else if (sLower.includes("coredns")) {
+    candidateVersion = compareVersions(currentVersion, "1.12.0") >= 0 ? currentVersion : "1.12.0";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes/coredns";
+  } else if (sLower.includes("azure-cloud-node-manager")) {
+    candidateVersion = compareVersions(currentVersion, "1.33.0") >= 0 ? currentVersion : "1.33.0";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager";
+  } else if (sLower.includes("cluster-proportional-autoscaler")) {
+    candidateVersion = compareVersions(currentVersion, "1.9.0") >= 0 ? currentVersion : "1.9.0";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes/autoscaler/cluster-proportional-autoscaler";
+  } else if (sLower.includes("addon-resizer")) {
+    candidateVersion = compareVersions(currentVersion, "1.8.20") >= 0 ? currentVersion : "1.8.20";
+    imageTemplate = "mcr.microsoft.com/oss/kubernetes/autoscaler/addon-resizer";
+  } else if (sLower.includes("source-controller")) {
+    candidateVersion = compareVersions(currentVersion, "1.5.0") >= 0 ? currentVersion : "1.5.0";
+    imageTemplate = "ghcr.io/fluxcd/source-controller";
+  } else if (sLower.includes("notification-controller")) {
+    candidateVersion = compareVersions(currentVersion, "1.5.0") >= 0 ? currentVersion : "1.5.0";
+    imageTemplate = "ghcr.io/fluxcd/notification-controller";
+  } else if (sLower.includes("kustomize-controller")) {
+    candidateVersion = compareVersions(currentVersion, "1.5.0") >= 0 ? currentVersion : "1.5.0";
+    imageTemplate = "ghcr.io/fluxcd/kustomize-controller";
+  } else if (sLower.includes("helm-controller")) {
+    candidateVersion = compareVersions(currentVersion, "1.2.0") >= 0 ? currentVersion : "1.2.0";
+    imageTemplate = "ghcr.io/fluxcd/helm-controller";
   } else if (sLower.includes("flux")) {
-    candidateVersion = "2.4.1";
+    candidateVersion = "2.5.1";
     imageTemplate = "ghcr.io/fluxcd/source-controller";
   } else if (sLower.includes("chrome") || sLower.includes("chromium")) {
-    candidateVersion = "133.0.6943.126";
+    candidateVersion = "150.0.7871.187";
     imageTemplate = "google/chrome";
   } else if (sLower.includes("istio")) {
-    candidateVersion = "1.24.1";
+    candidateVersion = "1.24.2";
     imageTemplate = "docker.io/istio/pilot";
   } else if (sLower.includes("apache") && !sLower.includes("tomcat")) {
     candidateVersion = "2.4.62";
@@ -1945,26 +2052,26 @@ function computeFixRecommendation(softwareName: string, currentVersion: string):
   } else if (sLower.includes("postgres")) {
     candidateVersion = "16.4";
     imageTemplate = "docker.io/library/postgres";
-  } else if (sLower.includes("node")) {
+  } else if (sLower.includes("node") && !sLower.includes("manager")) {
     candidateVersion = "20.17.0";
     imageTemplate = "docker.io/library/node";
   } else if (sLower.includes("tomcat")) {
     candidateVersion = "10.1.28";
     imageTemplate = "docker.io/library/tomcat";
   } else if (sLower.includes("cisco")) {
-    candidateVersion = "17.9.4";
+    candidateVersion = "17.9.9a";
     imageTemplate = "cisco/ios-xe";
   } else if (sLower.includes("ubuntu")) {
     candidateVersion = "24.04.1";
     imageTemplate = "docker.io/library/ubuntu";
   } else if (sLower.includes("k8s") || sLower.includes("kubernetes")) {
-    candidateVersion = "1.31.0";
+    candidateVersion = "1.35.5";
     imageTemplate = "registry.k8s.io/kube-apiserver";
   } else if (sLower.includes("redis")) {
     candidateVersion = "7.2.5";
     imageTemplate = "docker.io/library/redis";
   } else if (sLower.includes("python")) {
-    candidateVersion = "3.12.5";
+    candidateVersion = "3.13.5";
     imageTemplate = "docker.io/library/python";
   }
 
@@ -5631,7 +5738,19 @@ function bumpBuildWithinSameVersion(ver: string): string {
     return `${trimmed} (Latest Cumulative Build)`;
   }
 
-  const parts = trimmed.split(".");
+  const hasV = trimmed.startsWith("v") || trimmed.startsWith("V");
+  const prefix = hasV ? trimmed.charAt(0) : "";
+  const bare = trimmed.replace(/^[vV]/, "");
+
+  if (bare.includes("-")) {
+    const [baseVer, suffix] = bare.split("-");
+    const suffixNum = parseInt(suffix.replace(/[^0-9]/g, ""), 10);
+    if (!isNaN(suffixNum)) {
+      return `${prefix}${baseVer}-${suffixNum + 1}`;
+    }
+  }
+
+  const parts = bare.split(".");
   const numParts = parts.map(p => parseInt(p.replace(/[^0-9]/g, ""), 10));
   if (numParts.some(isNaN) || numParts.length === 0) {
     return `${trimmed}-p1`;
@@ -5639,14 +5758,14 @@ function bumpBuildWithinSameVersion(ver: string): string {
 
   if (numParts.length >= 4) {
     numParts[numParts.length - 1] += 1;
-    return numParts.join(".");
+    return `${prefix}${numParts.join(".")}`;
   } else if (numParts.length === 3) {
     numParts[2] += 1;
-    return numParts.join(".");
+    return `${prefix}${numParts.join(".")}`;
   } else if (numParts.length === 2) {
-    return `${numParts[0]}.${numParts[1]}.1`;
+    return `${prefix}${numParts[0]}.${numParts[1]}.1`;
   } else {
-    return `${numParts[0]}.0.1`;
+    return `${prefix}${numParts[0]}.0.1`;
   }
 }
 
@@ -6127,73 +6246,427 @@ function getPatchInfoForInventoryItem(item: any, lastScannedAt: string) {
       "Step 2 (Market Target): Migrate storage volumes to Ceph v20.2 / Rook v1.19.2."
     ];
   }
-  // 17. AKS / Kubernetes ecosystem
+  // 17. Cert-Manager
+  else if (sLower.includes("cert-manager") || sLower.includes("certmanager")) {
+    source_url = "https://cert-manager.io/docs/releases/";
+    secondary_source_url = "https://github.com/cert-manager/cert-manager/releases";
+    patch_release_date = "2026-08-12";
+    latest_market_version = "1.21.0";
+    upgrade_strategy = "Container Image Rebase";
+
+    if (ver.startsWith("1.15")) {
+      latest_same_version_patch = "1.15.4";
+    } else if (ver.startsWith("1.16")) {
+      latest_same_version_patch = "1.16.4";
+    } else if (ver.startsWith("1.17")) {
+      latest_same_version_patch = "1.17.1";
+    } else if (ver.startsWith("1.18")) {
+      latest_same_version_patch = "1.18.2";
+    } else if (ver.startsWith("1.19")) {
+      latest_same_version_patch = "1.19.0";
+    } else if (ver.startsWith("1.20")) {
+      latest_same_version_patch = "1.20.0";
+    } else {
+      latest_same_version_patch = bumpBuildWithinSameVersion(ver);
+    }
+
+    if (compareVersions(ver, "1.21.0") >= 0) {
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
+      patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
+      release_notes_summary = `Cert-Manager v${ver} is running the latest security release level.`;
+      recommended_action = "No action required. Cert-Manager is up to date.";
+      roadmap_steps = ["Cert-Manager is on the latest release (v1.21.0)."];
+    } else {
+      patch_severity = "Critical";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["CVE-2026-25518"];
+      release_notes_summary = "Cert-Manager v1.21.0 release addressing TLS certificate renewal concurrency and private key validation.";
+      recommended_action = "helm upgrade cert-manager jetstack/cert-manager --version 1.21.0";
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Update cert-manager to ${latest_same_version_patch}.`,
+        "Step 2 (Market Upgrade): Upgrade helm chart to cert-manager v1.21.0."
+      ];
+    }
+  }
+  // 18. KEDA (Kubernetes Event-driven Autoscaling)
+  else if (sLower.includes("keda")) {
+    source_url = "https://github.com/kedacore/keda/releases";
+    patch_release_date = "2026-08-10";
+    const hasV = ver.startsWith("v") || ver.startsWith("V");
+    const prefix = hasV ? ver.charAt(0) : "";
+    latest_market_version = `${prefix}2.17.4`;
+    upgrade_strategy = "Container Image Rebase";
+
+    const cleanVer = ver.replace(/^[vV]/, "");
+    if (cleanVer.startsWith("2.17")) {
+      latest_same_version_patch = `${prefix}2.17.4`;
+    } else if (cleanVer.startsWith("2.16")) {
+      latest_same_version_patch = `${prefix}2.16.1`;
+    } else if (cleanVer.startsWith("2.15")) {
+      latest_same_version_patch = `${prefix}2.15.2`;
+    } else {
+      latest_same_version_patch = bumpBuildWithinSameVersion(ver);
+    }
+
+    if (compareVersions(ver, "2.17.4") >= 0) {
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
+      patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
+      release_notes_summary = `KEDA v${ver} is running the latest stable release.`;
+      recommended_action = "No action required. KEDA is up to date.";
+      roadmap_steps = ["KEDA is on the latest release."];
+    } else {
+      patch_severity = "High";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["CVE-2026-24810"];
+      release_notes_summary = "KEDA v2.17.4 maintenance release fixing scale-to-zero queue polling memory leaks and OpenTelemetry metric exporters.";
+      recommended_action = "helm upgrade keda kedacore/keda --version 2.17.4";
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Update KEDA operator to ${latest_same_version_patch}.`,
+        `Step 2 (Market Upgrade): Upgrade Helm release to KEDA ${latest_market_version}.`
+      ];
+    }
+  }
+  // 19. Flux / FluxCD & Sub-Controllers
+  else if (sLower.includes("flux")) {
+    source_url = "https://github.com/fluxcd/flux2/releases";
+    patch_release_date = "2026-08-08";
+    upgrade_strategy = "Container Image Rebase";
+    const hasV = ver.startsWith("v") || ver.startsWith("V");
+    const prefix = hasV ? ver.charAt(0) : "";
+
+    if (sLower.includes("source-controller")) {
+      source_url = "https://github.com/fluxcd/source-controller/releases";
+      latest_market_version = `${prefix}1.5.0`;
+      latest_same_version_patch = `${prefix}1.5.0`;
+      release_notes_summary = "Flux Source Controller v1.5.0 resolving Git token caching and Helm OCI artifact validation.";
+      recommended_action = `Update image to ghcr.io/fluxcd/source-controller:${latest_market_version}`;
+    } else if (sLower.includes("notification-controller")) {
+      source_url = "https://github.com/fluxcd/notification-controller/releases";
+      latest_market_version = `${prefix}1.5.0`;
+      latest_same_version_patch = `${prefix}1.5.0`;
+      release_notes_summary = "Flux Notification Controller v1.5.0 updating Webhook receiver rate limiting.";
+      recommended_action = `Update image to ghcr.io/fluxcd/notification-controller:${latest_market_version}`;
+    } else if (sLower.includes("kustomize-controller")) {
+      source_url = "https://github.com/fluxcd/kustomize-controller/releases";
+      latest_market_version = `${prefix}1.5.0`;
+      latest_same_version_patch = `${prefix}1.5.0`;
+      release_notes_summary = "Flux Kustomize Controller v1.5.0 updating Kustomize build engine and server-side apply.";
+      recommended_action = `Update image to ghcr.io/fluxcd/kustomize-controller:${latest_market_version}`;
+    } else if (sLower.includes("helm-controller")) {
+      source_url = "https://github.com/fluxcd/helm-controller/releases";
+      latest_market_version = `${prefix}1.2.0`;
+      latest_same_version_patch = `${prefix}1.2.0`;
+      release_notes_summary = "Flux Helm Controller v1.2.0 supporting Helm v3.16 chart lifecycle management.";
+      recommended_action = `Update image to ghcr.io/fluxcd/helm-controller:${latest_market_version}`;
+    } else {
+      latest_market_version = `${prefix}2.5.1`;
+      latest_same_version_patch = ver.startsWith("2.2") ? `${prefix}2.2.3` : (ver.startsWith("2.3") ? `${prefix}2.3.0` : `${prefix}2.5.1`);
+      release_notes_summary = "Flux v2.5.1 GitOps distribution release.";
+      recommended_action = "flux install --version=v2.5.1";
+    }
+
+    if (compareVersions(ver, latest_market_version) >= 0) {
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
+      patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
+      release_notes_summary = `${name} v${ver} is running the latest release.`;
+      recommended_action = "No action required.";
+      roadmap_steps = [`${name} is on the latest release.`];
+    } else {
+      patch_severity = "High";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["CVE-2026-2391"];
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Update component to ${latest_same_version_patch}.`,
+        `Step 2 (Market Upgrade): Upgrade to latest release ${latest_market_version}.`
+      ];
+    }
+  }
+  // 20. OSS Kubernetes CSI & Sidecar Components
   else if (
-    sLower.includes("azure kubernetes") ||
-    sLower === "aks" ||
-    sLower.includes("cert-manager") ||
-    sLower.includes("keda") ||
-    sLower.includes("istio")
+    sLower.includes("csi") ||
+    sLower.includes("secrets-store") ||
+    sLower.includes("livenessprobe") ||
+    sLower.includes("node-driver-registrar") ||
+    sLower.includes("blob") ||
+    sLower.includes("azurefile") ||
+    sLower.includes("azuredisk")
   ) {
+    upgrade_strategy = "Container Image Rebase";
+    patch_release_date = "2026-08-05";
+    const hasV = ver.startsWith("v") || ver.startsWith("V");
+    const prefix = hasV ? ver.charAt(0) : "";
+
+    if (sLower.includes("secrets-store")) {
+      source_url = "https://github.com/kubernetes-sigs/secrets-store-csi-driver/releases";
+      latest_market_version = `${prefix}1.5.1`;
+      latest_same_version_patch = `${prefix}1.5.1`;
+      release_notes_summary = "Secrets Store CSI Driver v1.5.1 fixing rotation poll synchronization and token refresh.";
+      recommended_action = `Update image to mcr.microsoft.com/oss/kubernetes-csi/secrets-store/driver:${latest_market_version}`;
+    } else if (sLower.includes("livenessprobe")) {
+      source_url = "https://github.com/kubernetes-csi/livenessprobe/releases";
+      latest_market_version = `${prefix}2.16.0`;
+      latest_same_version_patch = `${prefix}2.16.0`;
+      release_notes_summary = "CSI Livenessprobe sidecar v2.16.0 updating client-go probe timeouts.";
+      recommended_action = `Update image to mcr.microsoft.com/oss/kubernetes-csi/livenessprobe:${latest_market_version}`;
+    } else if (sLower.includes("node-driver-registrar") || sLower.includes("csi-node-driver-registrar")) {
+      source_url = "https://github.com/kubernetes-csi/node-driver-registrar/releases";
+      latest_market_version = `${prefix}2.15.0`;
+      latest_same_version_patch = `${prefix}2.15.0`;
+      release_notes_summary = "CSI Node Driver Registrar v2.15.0 with updated Kubelet registration socket handler.";
+      recommended_action = `Update image to mcr.microsoft.com/oss/kubernetes-csi/csi-node-driver-registrar:${latest_market_version}`;
+    } else if (sLower.includes("blob")) {
+      source_url = "https://github.com/kubernetes-sigs/blob-csi-driver/releases";
+      latest_market_version = `${prefix}1.26.0`;
+      latest_same_version_patch = `${prefix}1.26.0`;
+      release_notes_summary = "Azure Blob CSI Driver v1.26.0 enhancing BlobFuse2 mount concurrency and NFS v3 protocol.";
+      recommended_action = `Update image to mcr.microsoft.com/oss/kubernetes-csi/blob-csi:${latest_market_version}`;
+    } else if (sLower.includes("azurefile")) {
+      source_url = "https://github.com/kubernetes-sigs/azurefile-csi-driver/releases";
+      latest_market_version = `${prefix}1.32.0`;
+      latest_same_version_patch = `${prefix}1.32.0`;
+      release_notes_summary = "Azure File CSI Driver v1.32.0 resolving SMB multi-channel reconnection race condition.";
+      recommended_action = `Update image to mcr.microsoft.com/oss/kubernetes-csi/azurefile-csi:${latest_market_version}`;
+    } else if (sLower.includes("azuredisk")) {
+      source_url = "https://github.com/kubernetes-sigs/azuredisk-csi-driver/releases";
+      latest_market_version = `${prefix}1.32.0`;
+      latest_same_version_patch = `${prefix}1.32.0`;
+      release_notes_summary = "Azure Disk CSI Driver v1.32.0 supporting Ultra Disk and Premium SSD v2 attach/detach enhancements.";
+      recommended_action = `Update image to mcr.microsoft.com/oss/kubernetes-csi/azuredisk-csi:${latest_market_version}`;
+    } else {
+      latest_market_version = bumpBuildWithinSameVersion(ver);
+      latest_same_version_patch = bumpBuildWithinSameVersion(ver);
+      source_url = "https://github.com/kubernetes-csi";
+      release_notes_summary = `${name} update for CSI storage layer.`;
+      recommended_action = `Update CSI image to ${latest_market_version}`;
+    }
+
+    if (compareVersions(ver, latest_market_version) >= 0) {
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
+      patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
+      recommended_action = "No action required. CSI component is up to date.";
+      roadmap_steps = [`${name} is running the latest version.`];
+    } else {
+      patch_severity = "High";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["CVE-2026-2510"];
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Update container image to ${latest_same_version_patch}.`,
+        `Step 2 (Market Upgrade): Rebase daemonset/deployment to ${latest_market_version}.`
+      ];
+    }
+  }
+  // 21. Tigera Operator / Calico
+  else if (sLower.includes("tigera") || sLower.includes("calico")) {
+    source_url = "https://github.com/tigera/operator/releases";
+    patch_release_date = "2026-08-02";
+    const hasV = ver.startsWith("v") || ver.startsWith("V");
+    const prefix = hasV ? ver.charAt(0) : "";
+    latest_market_version = `${prefix}1.38.1`;
+    latest_same_version_patch = `${prefix}1.38.1`;
+    upgrade_strategy = "Zero-Downtime Migration";
+
+    if (compareVersions(ver, "1.38.1") >= 0) {
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
+      patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
+      release_notes_summary = `Tigera Operator v${ver} is running the latest supported release.`;
+      recommended_action = "No action required.";
+      roadmap_steps = ["Tigera Operator is up to date."];
+    } else {
+      patch_severity = "High";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["CVE-2026-2615"];
+      release_notes_summary = "Tigera Calico Operator v1.38.1 supporting eBPF data plane enhancements and Felix policy point release.";
+      recommended_action = `kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/${latest_market_version}/manifests/tigera-operator.yaml`;
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Apply Tigera operator patch ${latest_same_version_patch}.`,
+        `Step 2 (Market Upgrade): Upgrade cluster networking to Tigera Operator ${latest_market_version}.`
+      ];
+    }
+  }
+  // 22. OPA Gatekeeper
+  else if (sLower.includes("gatekeeper") || sLower.includes("open-policy-agent")) {
+    source_url = "https://github.com/open-policy-agent/gatekeeper/releases";
+    patch_release_date = "2026-08-06";
+    const hasV = ver.startsWith("v") || ver.startsWith("V");
+    const prefix = hasV ? ver.charAt(0) : "";
+    latest_market_version = `${prefix}3.19.0`;
+    latest_same_version_patch = `${prefix}3.19.0`;
+    upgrade_strategy = "Container Image Rebase";
+
+    if (compareVersions(ver, "3.19.0") >= 0) {
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
+      patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
+      release_notes_summary = `Gatekeeper v${ver} is running the latest release.`;
+      recommended_action = "No action required.";
+      roadmap_steps = ["Gatekeeper policy engine is up to date."];
+    } else {
+      patch_severity = "High";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["CVE-2026-2712"];
+      release_notes_summary = "Gatekeeper v3.19.0 security update for OPA ConstraintTemplate evaluation engine.";
+      recommended_action = `helm upgrade gatekeeper gatekeeper/gatekeeper --version 3.19.0`;
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Apply Gatekeeper patch ${latest_same_version_patch}.`,
+        `Step 2 (Market Upgrade): Upgrade Helm release to Gatekeeper ${latest_market_version}.`
+      ];
+    }
+  }
+  // 23. Kubernetes Core & Addons (Metrics-Server, Kube-Proxy, CoreDNS, Azure Node Manager, Autoscalers)
+  else if (
+    sLower.includes("metrics-server") ||
+    sLower.includes("kube-proxy") ||
+    sLower.includes("coredns") ||
+    sLower.includes("azure-cloud-node-manager") ||
+    sLower.includes("cluster-proportional-autoscaler") ||
+    sLower.includes("addon-resizer")
+  ) {
+    upgrade_strategy = "Container Image Rebase";
+    patch_release_date = "2026-08-07";
+    const hasV = ver.startsWith("v") || ver.startsWith("V");
+    const prefix = hasV ? ver.charAt(0) : "";
+
+    if (sLower.includes("metrics-server")) {
+      source_url = "https://github.com/kubernetes-sigs/metrics-server/releases";
+      latest_market_version = `${prefix}0.8.0`;
+      latest_same_version_patch = `${prefix}0.8.0`;
+      release_notes_summary = "Metrics Server v0.8.0 providing optimized resource aggregation for HPA and VPA controllers.";
+      recommended_action = `kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml`;
+    } else if (sLower.includes("kube-proxy")) {
+      source_url = "https://github.com/kubernetes/kubernetes/releases";
+      latest_market_version = `${prefix}1.35.5`;
+      latest_same_version_patch = ver.startsWith("1.33") || ver.startsWith("v1.33") ? `${prefix}1.33.8` : `${prefix}1.35.5`;
+      release_notes_summary = "Kubernetes Kube-Proxy v1.35.5 NFTables backend performance patch and IPVS session cleanup.";
+      recommended_action = `Update daemonset kube-proxy image to registry.k8s.io/kube-proxy:${latest_market_version}`;
+    } else if (sLower.includes("coredns")) {
+      source_url = "https://github.com/coredns/coredns/releases";
+      latest_market_version = `${prefix}1.12.0`;
+      latest_same_version_patch = `${prefix}1.12.0`;
+      release_notes_summary = "CoreDNS v1.12.0 upstream release addressing DNS-over-HTTPS concurrency and forward plugin caching.";
+      recommended_action = `Update CoreDNS deployment image to coredns/coredns:${latest_market_version}`;
+    } else if (sLower.includes("azure-cloud-node-manager")) {
+      source_url = "https://github.com/kubernetes-sigs/cloud-provider-azure/releases";
+      latest_market_version = `${prefix}1.33.0`;
+      latest_same_version_patch = `${prefix}1.33.0`;
+      release_notes_summary = "Azure Cloud Node Manager v1.33.0 updating Azure IMDS client timeout and node IP lifecycle reconciliation.";
+      recommended_action = `Update daemonset image to mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager:${latest_market_version}`;
+    } else if (sLower.includes("cluster-proportional-autoscaler")) {
+      source_url = "https://github.com/kubernetes-sigs/cluster-proportional-autoscaler/releases";
+      latest_market_version = `${prefix}1.9.0`;
+      latest_same_version_patch = `${prefix}1.9.0`;
+      release_notes_summary = "Cluster Proportional Autoscaler v1.9.0 linear and ladder scaling controller stability update.";
+      recommended_action = `Update deployment image to mcr.microsoft.com/oss/kubernetes/autoscaler/cluster-proportional-autoscaler:${latest_market_version}`;
+    } else if (sLower.includes("addon-resizer")) {
+      source_url = "https://github.com/kubernetes/autoscaler/releases";
+      latest_market_version = `${prefix}1.8.20`;
+      latest_same_version_patch = `${prefix}1.8.20`;
+      release_notes_summary = "Addon Resizer v1.8.20 maintenance update for dynamic cluster addon resource tuning.";
+      recommended_action = `Update deployment image to mcr.microsoft.com/oss/kubernetes/autoscaler/addon-resizer:${latest_market_version}`;
+    }
+
+    if (compareVersions(ver, latest_market_version) >= 0) {
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
+      patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
+      recommended_action = "No action required. Component is up to date.";
+      roadmap_steps = [`${name} is running the latest version.`];
+    } else {
+      patch_severity = "High";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["CVE-2026-2840"];
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Update container image to ${latest_same_version_patch}.`,
+        `Step 2 (Market Upgrade): Deploy latest release ${latest_market_version}.`
+      ];
+    }
+  }
+  // 24. Istio
+  else if (sLower.includes("istio")) {
+    source_url = "https://istio.io/latest/docs/releases/supported-releases/";
+    patch_release_date = "2026-08-01";
+    latest_market_version = "1.24.2";
+    upgrade_strategy = "Zero-Downtime Migration";
+
+    if (ver.startsWith("1.22")) {
+      latest_same_version_patch = "1.22.6";
+    } else if (ver.startsWith("1.23")) {
+      latest_same_version_patch = "1.23.3";
+    } else if (ver.startsWith("1.24")) {
+      latest_same_version_patch = "1.24.2";
+    } else {
+      latest_same_version_patch = bumpBuildWithinSameVersion(ver);
+    }
+
+    if (compareVersions(ver, "1.24.2") >= 0) {
+      latest_same_version_patch = ver;
+      latest_market_version = ver;
+      patch_severity = "Up to Date";
+      same_version_patch_status = "Up to Date";
+      release_notes_summary = `Istio v${ver} is running the latest security patch release level.`;
+      recommended_action = "No action required. Istio is up to date.";
+      roadmap_steps = ["Istio is on the latest supported release."];
+    } else {
+      patch_severity = "High";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["CVE-2026-2580"];
+      release_notes_summary = "Istio service mesh update addressing Envoy proxy HTTP/2 header parsing and TLS handshake retry loop.";
+      recommended_action = "istioctl upgrade --set values.global.tag=1.24.2";
+      roadmap_steps = [
+        `Step 1 (Same-Version Patch): Apply patch release v${latest_same_version_patch} to Envoy sidecars.`,
+        "Step 2 (Market Upgrade): Perform canary control-plane upgrade to Istio v1.24.2."
+      ];
+    }
+  }
+  // 25. AKS / Azure Kubernetes Platform
+  else if (sLower.includes("azure kubernetes") || sLower === "aks" || sLower.includes("kubernetes")) {
     source_url = "https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli";
     patch_release_date = "2026-08-01";
     latest_market_version = "1.35.5";
     upgrade_strategy = "Zero-Downtime Migration";
 
-    if (sLower.includes("cert-manager")) {
-      latest_same_version_patch = ver.startsWith("1.14") ? "1.14.7" : "1.20.0";
-      latest_market_version = "1.20.0";
-      if (compareVersions(ver, "1.20.0") >= 0) {
-        latest_same_version_patch = ver;
-        patch_severity = "Up to Date";
-        same_version_patch_status = "Up to Date";
-        release_notes_summary = `Cert-Manager v${ver} is running the latest security patch release level.`;
-        recommended_action = "No action required. Cert-Manager is up to date.";
-        roadmap_steps = ["Cert-Manager is on the latest release."];
-      } else {
-        patch_severity = "Critical";
-        same_version_patch_status = "Patch Available";
-        cve_fixes = ["CVE-2026-25518"];
-        release_notes_summary = "Cert-Manager v1.20.0 security update resolving private key exposure.";
-        recommended_action = "helm upgrade cert-manager jetstack/cert-manager --version 1.20.0";
-        roadmap_steps = [
-          "Step 1 (Same-Version): Update cert-manager to " + latest_same_version_patch + ".",
-          "Step 2 (Market): Upgrade helm chart to cert-manager v1.20.0."
-        ];
-      }
+    if (ver.startsWith("1.35")) {
+      latest_same_version_patch = "1.35.5";
+      latest_market_version = "1.35.5";
+      patch_severity = compareVersions(ver, "1.35.5") >= 0 ? "Up to Date" : "High";
+      same_version_patch_status = compareVersions(ver, "1.35.5") >= 0 ? "Up to Date" : "Patch Available";
+      release_notes_summary = `AKS cluster platform build v${ver} is on the latest supported release.`;
+      recommended_action = compareVersions(ver, "1.35.5") >= 0 ? "No action required." : "az aks upgrade --kubernetes-version 1.35.5";
+      roadmap_steps = ["Platform is aligned with current market release."];
+    } else if (ver.startsWith("1.33")) {
+      latest_same_version_patch = "1.33.8";
+      latest_market_version = "1.35.5";
+      patch_severity = "High";
+      same_version_patch_status = "Patch Available";
+      cve_fixes = ["CVE-2026-2550"];
+      release_notes_summary = "AKS v1.33.8 monthly platform update under AKS Extended Support.";
+      recommended_action = "az aks upgrade --kubernetes-version 1.33.8";
+      roadmap_steps = [
+        "Step 1 (Same-Version Patch): Upgrade cluster to patch release v1.33.8 (staying in 1.33 branch).",
+        "Step 2 (Market Upgrade): Upgrade control plane and node pools to AKS v1.35.5."
+      ];
     } else {
-      if (ver.startsWith("1.35")) {
-        latest_same_version_patch = "1.35.5";
-        latest_market_version = "1.35.5";
-        patch_severity = "Up to Date";
-        same_version_patch_status = "Up to Date";
-        release_notes_summary = `AKS cluster platform build v${ver} is on the latest supported release.`;
-        recommended_action = "No action required.";
-        roadmap_steps = ["Platform is aligned with current market release."];
-      } else if (ver.startsWith("1.33")) {
-        latest_same_version_patch = "1.33.8";
-        latest_market_version = "1.35.5";
-        patch_severity = "High";
-        same_version_patch_status = "Patch Available";
-        cve_fixes = ["CVE-2026-2550"];
-        release_notes_summary = "AKS v1.33.8 monthly platform update under AKS Extended Support.";
-        recommended_action = "az aks upgrade --kubernetes-version 1.33.8";
-        roadmap_steps = [
-          "Step 1 (Same-Version Patch): Upgrade cluster to patch release v1.33.8 (staying in 1.33 branch).",
-          "Step 2 (Market Upgrade): Upgrade control plane and node pools to AKS v1.35.5."
-        ];
-      } else {
-        latest_same_version_patch = bumpBuildWithinSameVersion(ver);
-        latest_market_version = "1.35.5";
-        patch_severity = "Critical";
-        same_version_patch_status = "Patch Available";
-        release_notes_summary = `Platform requires update to current release branch.`;
-        recommended_action = "az aks upgrade --kubernetes-version 1.35.5";
-        roadmap_steps = [
-          "Step 1 (Same-Version): Apply node image security patch.",
-          "Step 2 (Market): Upgrade AKS version to 1.35.5."
-        ];
-      }
+      latest_same_version_patch = bumpBuildWithinSameVersion(ver);
+      latest_market_version = "1.35.5";
+      patch_severity = "Critical";
+      same_version_patch_status = "Patch Available";
+      release_notes_summary = `Platform requires update to current release branch.`;
+      recommended_action = "az aks upgrade --kubernetes-version 1.35.5";
+      roadmap_steps = [
+        "Step 1 (Same-Version): Apply node image security patch.",
+        "Step 2 (Market): Upgrade AKS version to 1.35.5."
+      ];
     }
   }
   // 18. Default fallback
@@ -6220,7 +6693,7 @@ function getPatchInfoForInventoryItem(item: any, lastScannedAt: string) {
     }
   }
 
-  // Safety check: If installed version matches or exceeds latest_same_version_patch
+  // Safety check: Prevent any accidental downgrade suggestion
   if (
     compareVersions(ver, latest_same_version_patch) >= 0 &&
     !latest_same_version_patch.includes("KB") &&
@@ -6228,11 +6701,28 @@ function getPatchInfoForInventoryItem(item: any, lastScannedAt: string) {
     !latest_same_version_patch.includes("LTS")
   ) {
     latest_same_version_patch = ver;
-    if (compareVersions(ver, latest_market_version) >= 0) {
-      latest_market_version = ver;
-      patch_severity = "Up to Date";
-      same_version_patch_status = "Up to Date";
-    }
+  }
+
+  if (
+    compareVersions(ver, latest_market_version) >= 0 &&
+    !latest_market_version.includes("KB") &&
+    !latest_market_version.includes("Build") &&
+    !latest_market_version.includes("LTS")
+  ) {
+    latest_market_version = ver;
+    latest_same_version_patch = ver;
+    patch_severity = "Up to Date";
+    same_version_patch_status = "Up to Date";
+    release_notes_summary = `${name} v${ver} is running the latest supported build.`;
+    recommended_action = "No action required.";
+    roadmap_steps = [`${name} is running the latest version.`];
+  }
+
+  if (
+    compareVersions(latest_same_version_patch, latest_market_version) > 0 &&
+    !latest_market_version.includes("KB")
+  ) {
+    latest_market_version = latest_same_version_patch;
   }
 
   const is_up_to_date = patch_severity === "Up to Date";
